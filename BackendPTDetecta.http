@@ -1,0 +1,6 @@
+@BackendPTDetecta_HostAddress = http://localhost:5036
+
+GET {{BackendPTDetecta_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
