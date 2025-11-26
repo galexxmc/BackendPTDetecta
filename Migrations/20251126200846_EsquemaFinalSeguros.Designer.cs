@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendPTDetecta.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251126174603_Inicial")]
-    partial class Inicial
+    [Migration("20251126200846_EsquemaFinalSeguros")]
+    partial class EsquemaFinalSeguros
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,20 +25,34 @@ namespace BackendPTDetecta.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("BackendPTDetecta.Domain.Entities.HistoriaClinica", b =>
+            modelBuilder.Entity("BackendPTDetecta.Domain.Entities.HistorialClinico", b =>
                 {
-                    b.Property<int>("IdHistoriaClinica")
+                    b.Property<int>("IdHistorialClinico")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasColumnName("NU_ID_HIS_CLINICA");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdHistoriaClinica"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdHistorialClinico"));
 
-                    b.Property<string>("CodigoHistoria")
+                    b.Property<string>("AlergiasPrincipales")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("TX_CODIGO_HISTORIA");
+                        .HasColumnType("text")
+                        .HasColumnName("TX_ALER_PRIN");
+
+                    b.Property<string>("AntecedentesHereditarios")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("TX_ANTE_HEREDI");
+
+                    b.Property<string>("EnfermedadesCronicas")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("TX_ENFER_CRONI");
+
+                    b.Property<string>("EstadoPacienteActual")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("TX_ESTADO_PACIEN");
 
                     b.Property<int>("EstadoRegistro")
                         .HasColumnType("integer")
@@ -46,7 +60,7 @@ namespace BackendPTDetecta.Migrations
 
                     b.Property<DateTime>("FechaApertura")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("FE_APERTURA");
+                        .HasColumnName("FE_APER_HIS_CLIN");
 
                     b.Property<DateTime?>("FechaEliminacion")
                         .HasColumnType("timestamp with time zone")
@@ -59,6 +73,16 @@ namespace BackendPTDetecta.Migrations
                     b.Property<DateTime>("FechaRegistro")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("FE_REG");
+
+                    b.Property<string>("GrupoSanguineo")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("TX_GRUP_SANG");
+
+                    b.Property<int>("IdPaciente")
+                        .HasColumnType("integer")
+                        .HasColumnName("NU_ID_PACIENTE");
 
                     b.Property<string>("MotivoEliminacion")
                         .HasColumnType("text")
@@ -77,9 +101,12 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("text")
                         .HasColumnName("TX_ID_USU_REG");
 
-                    b.HasKey("IdHistoriaClinica");
+                    b.HasKey("IdHistorialClinico");
 
-                    b.ToTable("HISTORIAS_CLINICAS");
+                    b.HasIndex("IdPaciente")
+                        .IsUnique();
+
+                    b.ToTable("HISTORIAL_CLINICO");
                 });
 
             modelBuilder.Entity("BackendPTDetecta.Domain.Entities.Paciente", b =>
@@ -97,15 +124,23 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("TX_APE_PACIEN");
 
+                    b.Property<string>("Direccion")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("TX_DIR_PACIEN");
+
                     b.Property<string>("Dni")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
                         .HasColumnName("NU_DNI_PACIEN");
 
-                    b.Property<int>("Edad")
-                        .HasColumnType("integer")
-                        .HasColumnName("NU_EDAD_PACIEN");
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("TX_EMAIL_PACIEN");
 
                     b.Property<int>("EstadoRegistro")
                         .HasColumnType("integer")
@@ -127,11 +162,7 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("FE_REG");
 
-                    b.Property<int?>("IdHistoriaClinica")
-                        .HasColumnType("integer")
-                        .HasColumnName("NU_ID_HIS_CLINICA");
-
-                    b.Property<int?>("IdTipoSeguro")
+                    b.Property<int>("IdTipoSeguro")
                         .HasColumnType("integer")
                         .HasColumnName("NU_ID_TIPO_SEGURO");
 
@@ -151,6 +182,12 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("character varying(1)")
                         .HasColumnName("TX_SEXO_PACIEN");
 
+                    b.Property<string>("Telefono")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("NU_TEL_PACIEN");
+
                     b.Property<string>("UsuarioEliminacion")
                         .HasColumnType("text")
                         .HasColumnName("TX_ID_USU_ELI");
@@ -166,7 +203,8 @@ namespace BackendPTDetecta.Migrations
 
                     b.HasKey("IdPaciente");
 
-                    b.HasIndex("IdHistoriaClinica");
+                    b.HasIndex("Dni")
+                        .IsUnique();
 
                     b.HasIndex("IdTipoSeguro");
 
@@ -182,10 +220,11 @@ namespace BackendPTDetecta.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdTipoSeguro"));
 
-                    b.Property<string>("Descripcion")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("TX_DESCRIPCION");
+                    b.Property<string>("CoPago")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("TX_CO_PAGO");
 
                     b.Property<int>("EstadoRegistro")
                         .HasColumnType("integer")
@@ -207,11 +246,23 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("text")
                         .HasColumnName("TX_MOTIVO_ELI");
 
-                    b.Property<string>("Nombre")
+                    b.Property<string>("NombreSeguro")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("TX_NOMBRE_SEGURO");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("TX_NOM_SEG");
+
+                    b.Property<string>("RucEmpresa")
+                        .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)")
+                        .HasColumnName("NU_RUC_EMPRESA");
+
+                    b.Property<string>("TipoCobertura")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("TX_TIP_COBER");
 
                     b.Property<string>("UsuarioEliminacion")
                         .HasColumnType("text")
@@ -228,48 +279,69 @@ namespace BackendPTDetecta.Migrations
 
                     b.HasKey("IdTipoSeguro");
 
-                    b.ToTable("TIPOS_SEGURO");
+                    b.ToTable("TIPO_SEGUROS");
 
                     b.HasData(
                         new
                         {
                             IdTipoSeguro = 1,
+                            CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 17, 46, 3, 388, DateTimeKind.Utc).AddTicks(7600),
-                            Nombre = "SIS",
+                            FechaRegistro = new DateTime(2025, 11, 26, 20, 8, 45, 726, DateTimeKind.Utc).AddTicks(7365),
+                            NombreSeguro = "SIS",
+                            RucEmpresa = "20100000001",
+                            TipoCobertura = "Integral",
                             UsuarioRegistro = "SYSTEM"
                         },
                         new
                         {
                             IdTipoSeguro = 2,
+                            CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 17, 46, 3, 388, DateTimeKind.Utc).AddTicks(7870),
-                            Nombre = "EsSalud",
+                            FechaRegistro = new DateTime(2025, 11, 26, 20, 8, 45, 726, DateTimeKind.Utc).AddTicks(7640),
+                            NombreSeguro = "EsSalud",
+                            RucEmpresa = "20500000002",
+                            TipoCobertura = "Laboral",
                             UsuarioRegistro = "SYSTEM"
                         },
                         new
                         {
                             IdTipoSeguro = 3,
+                            CoPago = "20%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 17, 46, 3, 388, DateTimeKind.Utc).AddTicks(7871),
-                            Nombre = "Privado",
+                            FechaRegistro = new DateTime(2025, 11, 26, 20, 8, 45, 726, DateTimeKind.Utc).AddTicks(7642),
+                            NombreSeguro = "EPS Pacifico",
+                            RucEmpresa = "20600000003",
+                            TipoCobertura = "Privada",
                             UsuarioRegistro = "SYSTEM"
                         });
                 });
 
+            modelBuilder.Entity("BackendPTDetecta.Domain.Entities.HistorialClinico", b =>
+                {
+                    b.HasOne("BackendPTDetecta.Domain.Entities.Paciente", "Paciente")
+                        .WithOne("HistorialClinico")
+                        .HasForeignKey("BackendPTDetecta.Domain.Entities.HistorialClinico", "IdPaciente")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Paciente");
+                });
+
             modelBuilder.Entity("BackendPTDetecta.Domain.Entities.Paciente", b =>
                 {
-                    b.HasOne("BackendPTDetecta.Domain.Entities.HistoriaClinica", "HistoriaClinica")
-                        .WithMany()
-                        .HasForeignKey("IdHistoriaClinica");
-
                     b.HasOne("BackendPTDetecta.Domain.Entities.TipoSeguro", "TipoSeguro")
                         .WithMany()
-                        .HasForeignKey("IdTipoSeguro");
-
-                    b.Navigation("HistoriaClinica");
+                        .HasForeignKey("IdTipoSeguro")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("TipoSeguro");
+                });
+
+            modelBuilder.Entity("BackendPTDetecta.Domain.Entities.Paciente", b =>
+                {
+                    b.Navigation("HistorialClinico");
                 });
 #pragma warning restore 612, 618
         }

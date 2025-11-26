@@ -32,17 +32,34 @@ namespace BackendPTDetecta.Domain.Entities
         [Column("TX_FE_NAC_PACIEN")]
         public DateTime FechaNacimiento { get; set; }
 
+        // --- ESTOS ERAN LOS QUE FALTABAN ---
         [Column("NU_EDAD_PACIEN")]
         public int Edad { get; set; }
+
+        [Column("TX_DIR_PACIEN")]
+        [MaxLength(200)]
+        public string Direccion { get; set; } = string.Empty;
+
+        [Column("NU_TEL_PACIEN")]
+        [MaxLength(20)]
+        public string Telefono { get; set; } = string.Empty;
+
+        [Column("TX_EMAIL_PACIEN")]
+        [MaxLength(100)]
+        public string Email { get; set; } = string.Empty;
+        // ------------------------------------
 
         // Relaciones
         [Column("NU_ID_HIS_CLINICA")]
         public int? IdHistoriaClinica { get; set; }
-        [ForeignKey("IdHistoriaClinica")]
-        public virtual HistoriaClinica? HistoriaClinica { get; set; }
+        
+        // OJO: Quitamos el [ForeignKey] aquí para evitar ciclos en la BD si usamos la relación 1 a 1
+        // La relación principal la maneja HistorialClinico o ApplicationDbContext
+        public virtual HistorialClinico? HistorialClinico { get; set; }
 
         [Column("NU_ID_TIPO_SEGURO")]
         public int? IdTipoSeguro { get; set; }
+        
         [ForeignKey("IdTipoSeguro")]
         public virtual TipoSeguro? TipoSeguro { get; set; }
     }

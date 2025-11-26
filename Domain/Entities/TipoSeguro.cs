@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BackendPTDetecta.Domain.Entities
 {
-    [Table("TIPOS_SEGURO")]
+    [Table("TIPO_SEGUROS")] // Nombre plural según tu requisito
     public class TipoSeguro : EntidadAuditable
     {
         [Key]
@@ -11,12 +11,21 @@ namespace BackendPTDetecta.Domain.Entities
         public int IdTipoSeguro { get; set; }
 
         [Required]
-        [Column("TX_NOMBRE_SEGURO")]
-        [MaxLength(50)]
-        public string Nombre { get; set; } = string.Empty;
+        [Column("TX_NOM_SEG")]
+        [MaxLength(100)]
+        public string NombreSeguro { get; set; } = string.Empty;
 
-        [Column("TX_DESCRIPCION")]
-        [MaxLength(200)]
-        public string? Descripcion { get; set; }
+        [Required]
+        [Column("NU_RUC_EMPRESA")]
+        [MaxLength(11)] // RUC Perú tiene 11 dígitos
+        public string RucEmpresa { get; set; } = string.Empty;
+
+        [Column("TX_TIP_COBER")]
+        [MaxLength(100)]
+        public string TipoCobertura { get; set; } = string.Empty;
+
+        [Column("TX_CO_PAGO")]
+        [MaxLength(50)]
+        public string CoPago { get; set; } = string.Empty; // Ej: "10%" o "S/ 50.00"
     }
 }

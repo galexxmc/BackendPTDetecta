@@ -10,9 +10,9 @@ namespace BackendPTDetecta.Infrastructure.Data
 
         public DbSet<Paciente> Pacientes { get; set; }
         public DbSet<TipoSeguro> TiposSeguro { get; set; }
-        public DbSet<HistoriaClinica> HistoriasClinicas { get; set; }
+        // Cambié el nombre del DbSet para que coincida con tu clase nueva
+        public DbSet<HistorialClinico> HistorialesClinicos { get; set; }
 
-        // Fix para .NET 9
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
@@ -38,14 +38,57 @@ namespace BackendPTDetecta.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Filtros Globales (No traer eliminados)
             modelBuilder.Entity<Paciente>().HasQueryFilter(x => x.EstadoRegistro == 1);
             modelBuilder.Entity<TipoSeguro>().HasQueryFilter(x => x.EstadoRegistro == 1);
+            modelBuilder.Entity<HistorialClinico>().HasQueryFilter(x => x.EstadoRegistro == 1);
+
+            // CONFIGURACIÓN AVANZADA
             
-            // Datos Semilla
+            // DNI Único (Regla de negocio estricta)
+            modelBuilder.Entity<Paciente>()
+                .HasIndex(p => p.Dni)
+                .IsUnique();
+
+            // Relación 1 a 1: Un Paciente tiene UN Historial
+            modelBuilder.Entity<Paciente>()
+                .HasOne(p => p.HistorialClinico)
+                .WithOne(h => h.Paciente)
+                .HasForeignKey<HistorialClinico>(h => h.IdPaciente);
+
+            // DATOS SEMILLA (Con los nuevos campos RUC y Cobertura)
             modelBuilder.Entity<TipoSeguro>().HasData(
-                new TipoSeguro { IdTipoSeguro = 1, Nombre = "SIS", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" },
-                new TipoSeguro { IdTipoSeguro = 2, Nombre = "EsSalud", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" },
-                new TipoSeguro { IdTipoSeguro = 3, Nombre = "Privado", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" }
+                new TipoSeguro { 
+                    IdTipoSeguro = 1, 
+                    NombreSeguro = "SIS", 
+                    RucEmpresa = "20100000001", 
+                    TipoCobertura = "Integral", 
+                    CoPago = "0%", 
+                    FechaRegistro = DateTime.UtcNow, 
+                    EstadoRegistro = 1, 
+                    UsuarioRegistro = "SYSTEM" 
+                },
+                new TipoSeguro { 
+                    IdTipoSeguro = 2, 
+                    NombreSeguro = "EsSalud", 
+                    RucEmpresa = "20500000002", 
+                    TipoCobertura = "Laboral", 
+                    CoPago = "0%", 
+                    FechaRegistro = DateTime.UtcNow, 
+                    EstadoRegistro = 1, 
+                    UsuarioRegistro = "SYSTEM" 
+                },
+                new TipoSeguro { 
+                    IdTipoSeguro = 3, 
+                    NombreSeguro = "EPS Pacifico", 
+                    RucEmpresa = "20600000003", 
+                    TipoCobertura = "Privada", 
+                    CoPago = "20%", 
+                    FechaRegistro = DateTime.UtcNow, 
+                    EstadoRegistro = 1, 
+                    UsuarioRegistro = "SYSTEM" 
+                }
             );
         }
     }
