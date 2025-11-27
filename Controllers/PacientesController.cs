@@ -34,11 +34,13 @@ namespace BackendPTDetecta.Controllers
             {
                 IdPaciente = p.IdPaciente,
                 Dni = p.Dni,
-                NombreCompleto = $"{p.Nombres} {p.Apellidos}",
-                Nombres = p.Nombres,   // Enviamos también por separado por si acaso
+                CodigoPaciente = p.Codigo,
+                Nombres = p.Nombres,
                 Apellidos = p.Apellidos,
                 Edad = p.Edad,
                 Sexo = p.Sexo,
+                Direccion = p.Direccion,
+                FechaNacimiento = p.FechaNacimiento,
                 Telefono = p.Telefono,
                 Email = p.Email,
                 
@@ -82,12 +84,14 @@ namespace BackendPTDetecta.Controllers
             var dto = new PacienteDetalleDTO
             {
                 IdPaciente = p.IdPaciente,
+                CodigoPaciente = p.Codigo,
                 Dni = p.Dni,
-                NombreCompleto = $"{p.Nombres} {p.Apellidos}",
                 Nombres = p.Nombres,
                 Apellidos = p.Apellidos,
                 Edad = p.Edad,
                 Sexo = p.Sexo,
+                Direccion = p.Direccion,
+                FechaNacimiento = p.FechaNacimiento,
                 Telefono = p.Telefono,
                 Email = p.Email,
                 

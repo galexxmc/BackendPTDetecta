@@ -62,19 +62,19 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnName("NU_ESTADO_REGISTRO");
 
                     b.Property<DateTime>("FechaApertura")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_APERTURA");
 
                     b.Property<DateTime?>("FechaEliminacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_ELI");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_MOD");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_REG");
 
                     b.Property<string>("GrupoSanguineo")
@@ -127,6 +127,13 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("TX_APE_PACIEN");
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("text")
+                        .HasColumnName("TX_CODIGO_PACIENTE")
+                        .HasComputedColumnSql("'P' || LPAD(\"NU_ID_PACIENTE\"::TEXT, 5, '0')", true);
+
                     b.Property<string>("Direccion")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -154,19 +161,19 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnName("NU_ESTADO_REGISTRO");
 
                     b.Property<DateTime?>("FechaEliminacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_ELI");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_MOD");
 
                     b.Property<DateTime>("FechaNacimiento")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("date")
                         .HasColumnName("TX_FE_NAC_PACIEN");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_REG");
 
                     b.Property<int?>("IdHistoriaClinica")
@@ -242,15 +249,15 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnName("NU_ESTADO_REGISTRO");
 
                     b.Property<DateTime?>("FechaEliminacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_ELI");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_MOD");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_REG");
 
                     b.Property<string>("MotivoEliminacion")
@@ -298,7 +305,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 1,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 20, 34, 53, 440, DateTimeKind.Utc).AddTicks(895),
+                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(165),
                             NombreSeguro = "SIS",
                             RucEmpresa = "20100000001",
                             TipoCobertura = "Integral",
@@ -309,7 +316,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 2,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 20, 34, 53, 440, DateTimeKind.Utc).AddTicks(1139),
+                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(418),
                             NombreSeguro = "EsSalud",
                             RucEmpresa = "20500000002",
                             TipoCobertura = "Laboral",
@@ -320,7 +327,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 3,
                             CoPago = "20%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 20, 34, 53, 440, DateTimeKind.Utc).AddTicks(1141),
+                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(420),
                             NombreSeguro = "EPS Pacifico",
                             RucEmpresa = "20600000003",
                             TipoCobertura = "Privada",

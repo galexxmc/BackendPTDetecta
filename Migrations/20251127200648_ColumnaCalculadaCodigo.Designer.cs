@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendPTDetecta.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251126200846_EsquemaFinalSeguros")]
-    partial class EsquemaFinalSeguros
+    [Migration("20251127200648_ColumnaCalculadaCodigo")]
+    partial class ColumnaCalculadaCodigo
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,6 +44,12 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("text")
                         .HasColumnName("TX_ANTE_HEREDI");
 
+                    b.Property<string>("CodigoHistoria")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("TX_CODIGO_HISTORIA");
+
                     b.Property<string>("EnfermedadesCronicas")
                         .IsRequired()
                         .HasColumnType("text")
@@ -59,19 +65,19 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnName("NU_ESTADO_REGISTRO");
 
                     b.Property<DateTime>("FechaApertura")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("FE_APER_HIS_CLIN");
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("FE_APERTURA");
 
                     b.Property<DateTime?>("FechaEliminacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_ELI");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_MOD");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_REG");
 
                     b.Property<string>("GrupoSanguineo")
@@ -106,7 +112,7 @@ namespace BackendPTDetecta.Migrations
                     b.HasIndex("IdPaciente")
                         .IsUnique();
 
-                    b.ToTable("HISTORIAL_CLINICO");
+                    b.ToTable("HISTORIAS_CLINICAS");
                 });
 
             modelBuilder.Entity("BackendPTDetecta.Domain.Entities.Paciente", b =>
@@ -124,6 +130,13 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("TX_APE_PACIEN");
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("text")
+                        .HasColumnName("TX_CODIGO_PACIENTE")
+                        .HasComputedColumnSql("'P' || LPAD(\"NU_ID_PACIENTE\"::TEXT, 5, '0')", true);
+
                     b.Property<string>("Direccion")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -132,9 +145,13 @@ namespace BackendPTDetecta.Migrations
 
                     b.Property<string>("Dni")
                         .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("NU_DNI_PACIEN");
+
+                    b.Property<int>("Edad")
+                        .HasColumnType("integer")
+                        .HasColumnName("NU_EDAD_PACIEN");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -147,22 +164,26 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnName("NU_ESTADO_REGISTRO");
 
                     b.Property<DateTime?>("FechaEliminacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_ELI");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_MOD");
 
                     b.Property<DateTime>("FechaNacimiento")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("date")
                         .HasColumnName("TX_FE_NAC_PACIEN");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_REG");
 
-                    b.Property<int>("IdTipoSeguro")
+                    b.Property<int?>("IdHistoriaClinica")
+                        .HasColumnType("integer")
+                        .HasColumnName("NU_ID_HIS_CLINICA");
+
+                    b.Property<int?>("IdTipoSeguro")
                         .HasColumnType("integer")
                         .HasColumnName("NU_ID_TIPO_SEGURO");
 
@@ -231,15 +252,15 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnName("NU_ESTADO_REGISTRO");
 
                     b.Property<DateTime?>("FechaEliminacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_ELI");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_MOD");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_REG");
 
                     b.Property<string>("MotivoEliminacion")
@@ -287,7 +308,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 1,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 20, 8, 45, 726, DateTimeKind.Utc).AddTicks(7365),
+                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(165),
                             NombreSeguro = "SIS",
                             RucEmpresa = "20100000001",
                             TipoCobertura = "Integral",
@@ -298,7 +319,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 2,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 20, 8, 45, 726, DateTimeKind.Utc).AddTicks(7640),
+                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(418),
                             NombreSeguro = "EsSalud",
                             RucEmpresa = "20500000002",
                             TipoCobertura = "Laboral",
@@ -309,7 +330,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 3,
                             CoPago = "20%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 26, 20, 8, 45, 726, DateTimeKind.Utc).AddTicks(7642),
+                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(420),
                             NombreSeguro = "EPS Pacifico",
                             RucEmpresa = "20600000003",
                             TipoCobertura = "Privada",
@@ -332,9 +353,7 @@ namespace BackendPTDetecta.Migrations
                 {
                     b.HasOne("BackendPTDetecta.Domain.Entities.TipoSeguro", "TipoSeguro")
                         .WithMany()
-                        .HasForeignKey("IdTipoSeguro")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("IdTipoSeguro");
 
                     b.Navigation("TipoSeguro");
                 });

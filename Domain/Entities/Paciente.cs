@@ -10,6 +10,11 @@ namespace BackendPTDetecta.Domain.Entities
         [Column("NU_ID_PACIENTE")]
         public int IdPaciente { get; set; }
 
+        [Column("TX_CODIGO_PACIENTE")]
+        // DatabaseGenerated(DatabaseGeneratedOption.Computed) le dice a EF: "No intentes guardar esto, solo léelo"
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)] 
+        public string Codigo { get; set; } = string.Empty;
+
         [Required]
         [Column("NU_DNI_PACIEN")]
         [MaxLength(20)]
@@ -29,7 +34,7 @@ namespace BackendPTDetecta.Domain.Entities
         [MaxLength(1)]
         public string Sexo { get; set; } = string.Empty;
 
-        [Column("TX_FE_NAC_PACIEN")]
+        [Column("TX_FE_NAC_PACIEN", TypeName = "date")]
         public DateTime FechaNacimiento { get; set; }
 
         // --- ESTOS ERAN LOS QUE FALTABAN ---

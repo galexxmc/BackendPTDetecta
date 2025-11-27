@@ -20,17 +20,36 @@ namespace BackendPTDetecta.Infrastructure.Data
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+            // 1. Calcular la Hora Perú (UTC - 5)
+            var fechaUtc = DateTime.UtcNow;
+            var fechaPeru = fechaUtc.AddHours(-5);
+
+            // 2. "Truco" para quitar los milisegundos (decimales feos)
+            // Creamos una fecha nueva usando solo hasta los segundos.
+            var fechaLimpia = new DateTime(
+                fechaPeru.Year,
+                fechaPeru.Month,
+                fechaPeru.Day,
+                fechaPeru.Hour,
+                fechaPeru.Minute,
+                fechaPeru.Second
+            );
+
             foreach (var entry in ChangeTracker.Entries<EntidadAuditable>())
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.FechaRegistro = DateTime.UtcNow;
+                    // Usamos la fecha limpia y ajustada a Perú
+                    entry.Entity.FechaRegistro = fechaLimpia;
                     entry.Entity.EstadoRegistro = 1;
                 }
                 if (entry.State == EntityState.Modified)
                 {
-                    entry.Entity.FechaModificacion = DateTime.UtcNow;
+                    entry.Entity.FechaModificacion = fechaLimpia;
                 }
+
+                // Si implementas el Delete Lógico aquí también:
+                // if (entry.State == EntityState.Deleted) ... (o modificado manualmente)
             }
             return base.SaveChangesAsync(cancellationToken);
         }
@@ -44,8 +63,10 @@ namespace BackendPTDetecta.Infrastructure.Data
             modelBuilder.Entity<TipoSeguro>().HasQueryFilter(x => x.EstadoRegistro == 1);
             modelBuilder.Entity<HistorialClinico>().HasQueryFilter(x => x.EstadoRegistro == 1);
 
+            modelBuilder.Entity<Paciente>().Property(p => p.Codigo).HasComputedColumnSql("'P' || LPAD(\"NU_ID_PACIENTE\"::TEXT, 5, '0')", stored: true);
+
             // CONFIGURACIÓN AVANZADA
-            
+
             // DNI Único (Regla de negocio estricta)
             modelBuilder.Entity<Paciente>()
                 .HasIndex(p => p.Dni)
@@ -59,35 +80,38 @@ namespace BackendPTDetecta.Infrastructure.Data
 
             // DATOS SEMILLA (Con los nuevos campos RUC y Cobertura)
             modelBuilder.Entity<TipoSeguro>().HasData(
-                new TipoSeguro { 
-                    IdTipoSeguro = 1, 
-                    NombreSeguro = "SIS", 
-                    RucEmpresa = "20100000001", 
-                    TipoCobertura = "Integral", 
-                    CoPago = "0%", 
-                    FechaRegistro = DateTime.UtcNow, 
-                    EstadoRegistro = 1, 
-                    UsuarioRegistro = "SYSTEM" 
+                new TipoSeguro
+                {
+                    IdTipoSeguro = 1,
+                    NombreSeguro = "SIS",
+                    RucEmpresa = "20100000001",
+                    TipoCobertura = "Integral",
+                    CoPago = "0%",
+                    FechaRegistro = DateTime.UtcNow,
+                    EstadoRegistro = 1,
+                    UsuarioRegistro = "SYSTEM"
                 },
-                new TipoSeguro { 
-                    IdTipoSeguro = 2, 
-                    NombreSeguro = "EsSalud", 
-                    RucEmpresa = "20500000002", 
-                    TipoCobertura = "Laboral", 
-                    CoPago = "0%", 
-                    FechaRegistro = DateTime.UtcNow, 
-                    EstadoRegistro = 1, 
-                    UsuarioRegistro = "SYSTEM" 
+                new TipoSeguro
+                {
+                    IdTipoSeguro = 2,
+                    NombreSeguro = "EsSalud",
+                    RucEmpresa = "20500000002",
+                    TipoCobertura = "Laboral",
+                    CoPago = "0%",
+                    FechaRegistro = DateTime.UtcNow,
+                    EstadoRegistro = 1,
+                    UsuarioRegistro = "SYSTEM"
                 },
-                new TipoSeguro { 
-                    IdTipoSeguro = 3, 
-                    NombreSeguro = "EPS Pacifico", 
-                    RucEmpresa = "20600000003", 
-                    TipoCobertura = "Privada", 
-                    CoPago = "20%", 
-                    FechaRegistro = DateTime.UtcNow, 
-                    EstadoRegistro = 1, 
-                    UsuarioRegistro = "SYSTEM" 
+                new TipoSeguro
+                {
+                    IdTipoSeguro = 3,
+                    NombreSeguro = "EPS Pacifico",
+                    RucEmpresa = "20600000003",
+                    TipoCobertura = "Privada",
+                    CoPago = "20%",
+                    FechaRegistro = DateTime.UtcNow,
+                    EstadoRegistro = 1,
+                    UsuarioRegistro = "SYSTEM"
                 }
             );
         }
