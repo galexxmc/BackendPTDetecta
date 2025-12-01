@@ -50,10 +50,36 @@ namespace BackendPTDetecta.Infrastructure.Repositories
             entity.EstadoRegistro = 0;
             entity.UsuarioEliminacion = usuario;
             entity.MotivoEliminacion = motivo;
-            entity.FechaEliminacion = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<Paciente?> BuscarEliminadoPorDniAsync(string dni)
+        {
+            // IgnoreQueryFilters es OBLIGATORIO para poder ver los EstadoRegistro = 0
+            return await _context.Pacientes
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Dni == dni && p.EstadoRegistro == 0);
+        }
+
+        public async Task<bool> HabilitarPacienteAsync(int id)
+        {
+            // Buscamos incluso entre los eliminados
+            var paciente = await _context.Pacientes
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.IdPaciente == id);
+
+            if (paciente == null) return false;
+
+            // Reactivamos al paciente
+            paciente.EstadoRegistro = 1;
+            
+            // Opcional: Actualizar fecha modificación para auditoría
+            // paciente.UsuarioModificacion = "SistemaHabilitacion";
+
+            await _context.SaveChangesAsync();
+            return true;
+        }       
     }
 }

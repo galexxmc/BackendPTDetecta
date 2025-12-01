@@ -9,5 +9,7 @@ namespace BackendPTDetecta.Application.Interfaces
         Task<Paciente> CrearAsync(Paciente paciente);
         Task<bool> ActualizarAsync(Paciente paciente);
         Task<bool> EliminarLogicoAsync(int id, string usuario, string motivo);
+        Task<Paciente?> BuscarEliminadoPorDniAsync(string dni);
+        Task<bool> HabilitarPacienteAsync(int id);
     }
 }

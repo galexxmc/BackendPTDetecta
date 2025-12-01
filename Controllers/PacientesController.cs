@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using BackendPTDetecta.Infrastructure.Data;
 using BackendPTDetecta.Domain.Entities;
 using BackendPTDetecta.Application.DTOs;
+using BackendPTDetecta.Application.Interfaces;
+
 
 namespace BackendPTDetecta.Controllers
 {
@@ -11,10 +13,12 @@ namespace BackendPTDetecta.Controllers
     public class PacientesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IPacienteRepository _repository;
 
-        public PacientesController(ApplicationDbContext context)
+        public PacientesController(ApplicationDbContext context,IPacienteRepository repository)
         {
             _context = context;
+            _repository = repository; 
         }
 
         // GET: api/Pacientes
@@ -209,6 +213,24 @@ namespace BackendPTDetecta.Controllers
 
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        // GET: api/Pacientes/buscar-eliminado/12345678
+        [HttpGet("buscar-eliminado/{dni}")]
+        public async Task<ActionResult<Paciente>> BuscarEliminado(string dni)
+        {
+            var paciente = await _repository.BuscarEliminadoPorDniAsync(dni);
+            if (paciente == null) return NotFound("No se encontró un paciente eliminado con este DNI.");
+            return Ok(paciente);
+        }
+
+        // PUT: api/Pacientes/habilitar/5
+        [HttpPut("habilitar/{id}")]
+        public async Task<IActionResult> Habilitar(int id)
+        {
+            var exito = await _repository.HabilitarPacienteAsync(id);
+            if (!exito) return NotFound();
+            return Ok(new { mensaje = "Paciente habilitado correctamente" });
         }
     }
 }

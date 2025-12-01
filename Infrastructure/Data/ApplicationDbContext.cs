@@ -18,38 +18,54 @@ namespace BackendPTDetecta.Infrastructure.Data
             optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }
 
+// --- AQUÍ ESTÁ LA MAGIA CENTRALIZADA ---
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            // 1. Calcular la Hora Perú (UTC - 5)
-            var fechaUtc = DateTime.UtcNow;
-            var fechaPeru = fechaUtc.AddHours(-5);
+            // 1. Lógica robusta de Hora Perú (Mejor que AddHours(-5))
+            var utcNow = DateTime.UtcNow;
+            
+            TimeZoneInfo zonaPeru;
+            try { zonaPeru = TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time"); }
+            catch { zonaPeru = TimeZoneInfo.FindSystemTimeZoneById("America/Lima"); }
 
-            // 2. "Truco" para quitar los milisegundos (decimales feos)
-            // Creamos una fecha nueva usando solo hasta los segundos.
+            var fechaPeru = TimeZoneInfo.ConvertTimeFromUtc(utcNow, zonaPeru);
+
+            // 2. Quitar milisegundos
             var fechaLimpia = new DateTime(
-                fechaPeru.Year,
-                fechaPeru.Month,
-                fechaPeru.Day,
-                fechaPeru.Hour,
-                fechaPeru.Minute,
-                fechaPeru.Second
+                fechaPeru.Year, fechaPeru.Month, fechaPeru.Day,
+                fechaPeru.Hour, fechaPeru.Minute, fechaPeru.Second
             );
 
             foreach (var entry in ChangeTracker.Entries<EntidadAuditable>())
             {
+                // A) NUEVO REGISTRO
                 if (entry.State == EntityState.Added)
                 {
-                    // Usamos la fecha limpia y ajustada a Perú
                     entry.Entity.FechaRegistro = fechaLimpia;
                     entry.Entity.EstadoRegistro = 1;
                 }
+
+                // B) MODIFICACIÓN (Aquí detectamos si es Edición normal o Eliminación)
                 if (entry.State == EntityState.Modified)
                 {
-                    entry.Entity.FechaModificacion = fechaLimpia;
-                }
+                    // Verificamos si se está dando de baja (Estado pasa a 0)
+                    // entry.Property(...).CurrentValue nos da el valor que acabamos de asignar en el Repo
+                    var estadoActual = entry.Property(x => x.EstadoRegistro).CurrentValue;
 
-                // Si implementas el Delete Lógico aquí también:
-                // if (entry.State == EntityState.Deleted) ... (o modificado manualmente)
+                    if (estadoActual == 0) 
+                    {
+                        // CASO: ELIMINACIÓN LÓGICA
+                        // Solo ponemos la fecha de eliminación. 
+                        // ¡NO tocamos FechaModificacion!
+                        entry.Entity.FechaEliminacion = fechaLimpia;
+                    }
+                    else
+                    {
+                        // CASO: EDICIÓN NORMAL
+                        // Aquí sí actualizamos la fecha de modificación
+                        entry.Entity.FechaModificacion = fechaLimpia;
+                    }
+                }
             }
             return base.SaveChangesAsync(cancellationToken);
         }
