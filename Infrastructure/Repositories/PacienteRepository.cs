@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using BackendPTDetecta.Application.Interfaces;
 using BackendPTDetecta.Domain.Entities;
 using BackendPTDetecta.Infrastructure.Data;
+using BackendPTDetecta.Application.Interfaces;
 
 namespace BackendPTDetecta.Infrastructure.Repositories
 {
@@ -14,50 +14,99 @@ namespace BackendPTDetecta.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<List<Paciente>> ObtenerTodosAsync()
+        // 1. LECTURA: Traer datos con relaciones (Eager Loading)
+        public async Task<IEnumerable<Paciente>> ObtenerTodosConDetalleAsync()
         {
             return await _context.Pacientes
-                .Include(p => p.TipoSeguro) // JOIN automático
+                .Include(p => p.TipoSeguro)      
+                .Include(p => p.HistorialClinico) // JOIN con Historial
+                .Where(p => p.EstadoRegistro == 1) // Solo activos (Soft Delete)
+                .OrderByDescending(p => p.FechaRegistro)
                 .ToListAsync();
         }
 
-        public async Task<Paciente?> ObtenerPorIdAsync(int id)
+        public async Task<Paciente?> ObtenerPorIdConDetalleAsync(int id)
         {
             return await _context.Pacientes
                 .Include(p => p.TipoSeguro)
+                .Include(p => p.HistorialClinico)
                 .FirstOrDefaultAsync(p => p.IdPaciente == id);
         }
 
+        // 2. ESCRITURA TRANSACCIONAL (ACID)
+        // Aquí ocurre la magia: Creamos Paciente + Historial en una sola operación atómica.
         public async Task<Paciente> CrearAsync(Paciente paciente)
         {
-            _context.Pacientes.Add(paciente);
-            await _context.SaveChangesAsync();
-            return paciente;
+            // Iniciamos una transacción de base de datos manual
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // PASO A: Guardar el Paciente
+                _context.Pacientes.Add(paciente);
+                await _context.SaveChangesAsync(); // Al guardar, SQL Server genera el IdPaciente
+
+                // PASO B: Generar el Historial Clínico automáticamente
+                // Usamos el ID recién generado del paciente
+                var historial = new HistorialClinico
+                {
+                    IdPaciente = paciente.IdPaciente,
+                    CodigoHistoria = $"HC-{DateTime.Now.Year}-{paciente.IdPaciente:D4}", // Ej: HC-2025-0045
+                    FechaApertura = DateTime.UtcNow,
+                    UsuarioRegistro = paciente.UsuarioRegistro,
+                    EstadoPacienteActual = "Ingresado",
+                    
+                    // Valores por defecto para evitar nulos en BD
+                    GrupoSanguineo = "Pendiente",
+                    AlergiasPrincipales = "Ninguna reportada",
+                    EnfermedadesCronicas = "Ninguna reportada"
+                };
+
+                _context.HistorialesClinicos.Add(historial);
+                await _context.SaveChangesAsync();
+
+                // PASO C: Si todo salió bien, confirmamos los cambios en la BD
+                await transaction.CommitAsync();
+
+                return paciente;
+            }
+            catch (Exception)
+            {
+                // PASO D: Si algo falló (ej: se cayó el internet a medio camino), 
+                // deshacemos TODO. No se crea el paciente "huérfano" sin historial.
+                await transaction.RollbackAsync();
+                throw; 
+            }
         }
 
+        // 3. ACTUALIZACIÓN
         public async Task<bool> ActualizarAsync(Paciente paciente)
         {
             _context.Pacientes.Update(paciente);
-            await _context.SaveChangesAsync();
-            return true;
+            var filasAfectadas = await _context.SaveChangesAsync();
+            return filasAfectadas > 0;
         }
 
+        // 4. ELIMINACIÓN LÓGICA (Soft Delete)
         public async Task<bool> EliminarLogicoAsync(int id, string usuario, string motivo)
         {
-            var entity = await _context.Pacientes.FindAsync(id);
-            if (entity == null) return false;
+            var paciente = await _context.Pacientes.FindAsync(id);
+            if (paciente == null) return false;
 
-            entity.EstadoRegistro = 0;
-            entity.UsuarioEliminacion = usuario;
-            entity.MotivoEliminacion = motivo;
+            // No borramos el registro (Remove), solo cambiamos su estado
+            paciente.EstadoRegistro = 0; 
+            paciente.UsuarioEliminacion = usuario;
+            paciente.MotivoEliminacion = motivo;
+            paciente.FechaEliminacion = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return true;
         }
 
+        // 5. RECUPERACIÓN (Habilitar)
         public async Task<Paciente?> BuscarEliminadoPorDniAsync(string dni)
         {
-            // IgnoreQueryFilters es OBLIGATORIO para poder ver los EstadoRegistro = 0
+            // Usamos IgnoreQueryFilters() por si en el futuro configuras filtros globales en el DbContext
             return await _context.Pacientes
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(p => p.Dni == dni && p.EstadoRegistro == 0);
@@ -65,21 +114,31 @@ namespace BackendPTDetecta.Infrastructure.Repositories
 
         public async Task<bool> HabilitarPacienteAsync(int id)
         {
-            // Buscamos incluso entre los eliminados
             var paciente = await _context.Pacientes
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(p => p.IdPaciente == id);
 
             if (paciente == null) return false;
 
-            // Reactivamos al paciente
+            // Restauramos el paciente
             paciente.EstadoRegistro = 1;
+            paciente.UsuarioEliminacion = null;
+            paciente.MotivoEliminacion = null;
+            paciente.FechaEliminacion = null;
             
-            // Opcional: Actualizar fecha modificación para auditoría
-            // paciente.UsuarioModificacion = "SistemaHabilitacion";
+            // Auditoría de restauración
+            paciente.UsuarioModificacion = "Sistema Recuperación";
+            paciente.FechaModificacion = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return true;
-        }       
+        }
+
+        // 6. VALIDACIONES EXTRAS
+        public async Task<bool> ExisteDniAsync(string dni)
+        {
+            return await _context.Pacientes
+                .AnyAsync(p => p.Dni == dni && p.EstadoRegistro == 1);
+        }
     }
 }

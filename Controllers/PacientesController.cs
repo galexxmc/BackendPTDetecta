@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BackendPTDetecta.Infrastructure.Data;
 using BackendPTDetecta.Domain.Entities;
-using BackendPTDetecta.Application.DTOs;
+using BackendPTDetecta.Application.DTOs; // Asegúrate de tener tus DTOs aquí
 using BackendPTDetecta.Application.Interfaces;
-
 
 namespace BackendPTDetecta.Controllers
 {
@@ -12,64 +9,23 @@ namespace BackendPTDetecta.Controllers
     [ApiController]
     public class PacientesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        // 1. SOLO inyectamos la interfaz (Abstracción)
         private readonly IPacienteRepository _repository;
 
-        public PacientesController(ApplicationDbContext context,IPacienteRepository repository)
+        public PacientesController(IPacienteRepository repository)
         {
-            _context = context;
-            _repository = repository; 
+            _repository = repository;
         }
 
         // GET: api/Pacientes
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PacienteDetalleDTO>>> GetPacientes()
         {
-            // 1. Traemos la data con sus relaciones (JOINs)
-            var pacientes = await _context.Pacientes
-                .Include(p => p.TipoSeguro)
-                .Include(p => p.HistorialClinico)
-                .Where(p => p.EstadoRegistro == 1) // Solo activos
-                .OrderByDescending(p => p.FechaRegistro)
-                .ToListAsync();
+            // El trabajo sucio lo hace el repositorio
+            var pacientes = await _repository.ObtenerTodosConDetalleAsync();
 
-            // 2. Mapeamos a DTO para romper el ciclo infinito y limpiar la respuesta
-            var resultado = pacientes.Select(p => new PacienteDetalleDTO
-            {
-                IdPaciente = p.IdPaciente,
-                Dni = p.Dni,
-                CodigoPaciente = p.Codigo,
-                Nombres = p.Nombres,
-                Apellidos = p.Apellidos,
-                Edad = p.Edad,
-                Sexo = p.Sexo,
-                Direccion = p.Direccion,
-                FechaNacimiento = p.FechaNacimiento,
-                Telefono = p.Telefono,
-                Email = p.Email,
-                
-                // Objeto Seguro Limpio
-                Seguro = p.TipoSeguro != null ? new TipoSeguroDTO
-                {
-                    IdTipoSeguro = p.TipoSeguro.IdTipoSeguro,
-                    NombreSeguro = p.TipoSeguro.NombreSeguro,
-                    TipoCobertura = p.TipoSeguro.TipoCobertura,
-                    CoPago = p.TipoSeguro.CoPago
-                } : null,
-
-                // Objeto Historial Limpio
-                Historial = p.HistorialClinico != null ? new HistorialClinicoDTO
-                {
-                    IdHistorialClinico = p.HistorialClinico.IdHistorialClinico,
-                    CodigoHistoria = p.HistorialClinico.CodigoHistoria,
-                    FechaApertura = p.HistorialClinico.FechaApertura,
-                    GrupoSanguineo = p.HistorialClinico.GrupoSanguineo,
-                    AlergiasPrincipales = p.HistorialClinico.AlergiasPrincipales,
-                    EnfermedadesCronicas = p.HistorialClinico.EnfermedadesCronicas,
-                    EstadoPacienteActual = p.HistorialClinico.EstadoPacienteActual
-                } : null
-            }).ToList();
-
+            // Mapeo a DTO (Idealmente usarías AutoMapper, pero manual es válido y explícito)
+            var resultado = pacientes.Select(p => MapToDetalleDTO(p));
             return Ok(resultado);
         }
 
@@ -77,151 +33,94 @@ namespace BackendPTDetecta.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<PacienteDetalleDTO>> GetPaciente(int id)
         {
-            var p = await _context.Pacientes
-                .Include(p => p.TipoSeguro)
-                .Include(p => p.HistorialClinico)
-                .FirstOrDefaultAsync(x => x.IdPaciente == id);
-
+            var p = await _repository.ObtenerPorIdConDetalleAsync(id);
             if (p == null) return NotFound();
 
-            // Mapeo Individual
-            var dto = new PacienteDetalleDTO
-            {
-                IdPaciente = p.IdPaciente,
-                CodigoPaciente = p.Codigo,
-                Dni = p.Dni,
-                Nombres = p.Nombres,
-                Apellidos = p.Apellidos,
-                Edad = p.Edad,
-                Sexo = p.Sexo,
-                Direccion = p.Direccion,
-                FechaNacimiento = p.FechaNacimiento,
-                Telefono = p.Telefono,
-                Email = p.Email,
-                
-                Seguro = p.TipoSeguro != null ? new TipoSeguroDTO
-                {
-                    IdTipoSeguro = p.TipoSeguro.IdTipoSeguro,
-                    NombreSeguro = p.TipoSeguro.NombreSeguro,
-                    TipoCobertura = p.TipoSeguro.TipoCobertura,
-                    CoPago = p.TipoSeguro.CoPago
-                } : null,
-
-                Historial = p.HistorialClinico != null ? new HistorialClinicoDTO
-                {
-                    IdHistorialClinico = p.HistorialClinico.IdHistorialClinico,
-                    CodigoHistoria = p.HistorialClinico.CodigoHistoria,
-                    FechaApertura = p.HistorialClinico.FechaApertura,
-                    GrupoSanguineo = p.HistorialClinico.GrupoSanguineo,
-                    AlergiasPrincipales = p.HistorialClinico.AlergiasPrincipales,
-                    EnfermedadesCronicas = p.HistorialClinico.EnfermedadesCronicas,
-                    EstadoPacienteActual = p.HistorialClinico.EstadoPacienteActual
-                } : null
-            };
-
-            return Ok(dto);
+            return Ok(MapToDetalleDTO(p));
         }
 
         // POST: api/Pacientes
         [HttpPost]
-        public async Task<ActionResult<Paciente>> PostPaciente(Paciente paciente)
+        public async Task<ActionResult<PacienteDetalleDTO>> PostPaciente(PacienteCrearDTO datos)
         {
-            // Validación de DNI duplicado
-            bool existeDni = await _context.Pacientes.AnyAsync(x => x.Dni == paciente.Dni && x.EstadoRegistro == 1);
-            if (existeDni) return BadRequest(new { mensaje = "El DNI ya está registrado en el sistema." });
-
-            // 1. Guardar Paciente
-            _context.Pacientes.Add(paciente);
-            await _context.SaveChangesAsync();
-
-            // 2. Crear Historial Clínico Vacío Automáticamente
-            var historial = new HistorialClinico
+            // 1. Validación de Negocio (Delegada al repo)
+            if (await _repository.ExisteDniAsync(datos.Dni))
             {
-                IdPaciente = paciente.IdPaciente,
-                CodigoHistoria = "HC-" + DateTime.Now.Year + "-" + paciente.IdPaciente.ToString("D4"),
-                FechaApertura = DateTime.UtcNow,
-                UsuarioRegistro = paciente.UsuarioRegistro,
-                EstadoPacienteActual = "Ingresado"
-            };
-            _context.HistorialesClinicos.Add(historial);
-            await _context.SaveChangesAsync();
+                return BadRequest(new { mensaje = "El DNI ya está registrado en el sistema." });
+            }
 
-            return CreatedAtAction(nameof(GetPaciente), new { id = paciente.IdPaciente }, paciente);
+            // 2. Mapeo DTO -> Entidad
+            var nuevoPaciente = new Paciente
+            {
+                Dni = datos.Dni,
+                Nombres = datos.Nombres,
+                Apellidos = datos.Apellidos,
+                Edad = datos.Edad,
+                Sexo = datos.Sexo,
+                FechaNacimiento = datos.FechaNacimiento,
+                Direccion = datos.Direccion,
+                Telefono = datos.Telefono,
+                Email = datos.Email,
+                IdTipoSeguro = datos.IdTipoSeguro,
+                // Auditoría
+                UsuarioRegistro = datos.UsuarioRegistro ?? "WebUser", // Fallback
+                FechaRegistro = DateTime.UtcNow,
+                EstadoRegistro = 1
+            };
+
+            // 3. Persistencia (El repositorio se encargará de crear el Historial Clínico también)
+            var creado = await _repository.CrearAsync(nuevoPaciente);
+
+            // 4. Retornar 201 Created
+            return CreatedAtAction(nameof(GetPaciente), new { id = creado.IdPaciente }, MapToDetalleDTO(creado));
         }
 
         // PUT: api/Pacientes/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPaciente(int id, Paciente datos)
+        public async Task<IActionResult> PutPaciente(int id, PacienteCrearDTO datos)
         {
-            if (id != datos.IdPaciente) return BadRequest("ID URL no coincide con ID Cuerpo");
-
-            var existente = await _context.Pacientes.FindAsync(id);
-            if (existente == null) return NotFound();
+            // OJO: Aquí deberías recibir un DTO de Actualización, no PacienteCrearDTO, pero lo reusamos por ahora.
+            
+            var pacienteExistente = await _repository.ObtenerPorIdConDetalleAsync(id);
+            if (pacienteExistente == null) return NotFound();
 
             // Actualizamos campos
-            existente.Dni = datos.Dni;
-            existente.Nombres = datos.Nombres;
-            existente.Apellidos = datos.Apellidos;
-            existente.Sexo = datos.Sexo;
-            existente.FechaNacimiento = datos.FechaNacimiento;
-            existente.Edad = datos.Edad;
-            existente.Direccion = datos.Direccion;
-            existente.Telefono = datos.Telefono;
-            existente.Email = datos.Email;
-            existente.IdTipoSeguro = datos.IdTipoSeguro;
+            pacienteExistente.Dni = datos.Dni;
+            pacienteExistente.Nombres = datos.Nombres;
+            pacienteExistente.Apellidos = datos.Apellidos;
+            pacienteExistente.Sexo = datos.Sexo;
+            pacienteExistente.FechaNacimiento = datos.FechaNacimiento;                  
+            pacienteExistente.Edad = datos.Edad;
+            pacienteExistente.Direccion = datos.Direccion;
+            pacienteExistente.Telefono = datos.Telefono;
+            pacienteExistente.Email = datos.Email;
+            pacienteExistente.IdTipoSeguro = datos.IdTipoSeguro;
+            pacienteExistente.UsuarioModificacion = datos.UsuarioRegistro; // O un campo específico usuarioModificacion
+            pacienteExistente.FechaModificacion = DateTime.UtcNow;
 
-            // Auditoría
-            existente.UsuarioModificacion = datos.UsuarioModificacion;
-            // Fechas se llenan solas en DbContext
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Pacientes.Any(e => e.IdPaciente == id)) return NotFound();
-                throw;
-            }
+            await _repository.ActualizarAsync(pacienteExistente);
 
             return NoContent();
         }
 
         // PUT: api/Pacientes/eliminar/5
         [HttpPut("eliminar/{id}")]
-        public async Task<IActionResult> DeleteLogico(int id, [FromBody] dynamic data)
+        public async Task<IActionResult> DeleteLogico(int id, [FromBody] EliminarDTO data) // Usamos DTO, no dynamic
         {
-            var paciente = await _context.Pacientes.FindAsync(id);
-            if (paciente == null) return NotFound();
+            var exito = await _repository.EliminarLogicoAsync(id, data.UsuarioEliminacion, data.MotivoEliminacion);
+            if (!exito) return NotFound();
 
-            // Extraer datos del JSON dinámico
-            string usuario = "Sistema";
-            string motivo = "Sin motivo";
-
-            try 
-            { 
-                usuario = data.GetProperty("usuarioEliminacion").GetString(); 
-                motivo = data.GetProperty("motivoEliminacion").GetString();
-            } 
-            catch { /* Si no envían datos, usamos defaults */ }
-
-            // Soft Delete
-            paciente.EstadoRegistro = 0;
-            paciente.UsuarioEliminacion = usuario;
-            paciente.MotivoEliminacion = motivo;
-            paciente.FechaEliminacion = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
             return NoContent();
         }
 
         // GET: api/Pacientes/buscar-eliminado/12345678
         [HttpGet("buscar-eliminado/{dni}")]
-        public async Task<ActionResult<Paciente>> BuscarEliminado(string dni)
+        public async Task<ActionResult<PacienteDetalleDTO>> BuscarEliminado(string dni)
         {
             var paciente = await _repository.BuscarEliminadoPorDniAsync(dni);
-            if (paciente == null) return NotFound("No se encontró un paciente eliminado con este DNI.");
-            return Ok(paciente);
+            if (paciente == null) return NotFound(new { mensaje = "No se encontró un paciente eliminado con este DNI." });
+            
+            return Ok(MapToDetalleDTO(paciente));
         }
 
         // PUT: api/Pacientes/habilitar/5
@@ -232,5 +131,47 @@ namespace BackendPTDetecta.Controllers
             if (!exito) return NotFound();
             return Ok(new { mensaje = "Paciente habilitado correctamente" });
         }
+
+        // --- HELPER: Mapeo Manual (Para mantener el controller limpio) ---
+        // En un proyecto real, esto iría en una capa de Mappers o usarías AutoMapper
+        private static PacienteDetalleDTO MapToDetalleDTO(Paciente p)
+        {
+            return new PacienteDetalleDTO
+            {
+                IdPaciente = p.IdPaciente,
+                CodigoPaciente = p.Codigo,
+                Dni = p.Dni,
+                Nombres = p.Nombres,
+                Apellidos = p.Apellidos,
+                Edad = p.Edad,
+                Sexo = p.Sexo,
+                Direccion = p.Direccion,
+                FechaNacimiento = p.FechaNacimiento,
+                Telefono = p.Telefono,
+                Email = p.Email,
+                Seguro = p.TipoSeguro != null ? new TipoSeguroDTO
+                {
+                    IdTipoSeguro = p.TipoSeguro.IdTipoSeguro,
+                    NombreSeguro = p.TipoSeguro.NombreSeguro,
+                    TipoCobertura = p.TipoSeguro.TipoCobertura,
+                    CoPago = p.TipoSeguro.CoPago
+                } : null,
+                Historial = p.HistorialClinico != null ? new HistorialClinicoDTO
+                {
+                    IdHistorialClinico = p.HistorialClinico.IdHistorialClinico,
+                    CodigoHistoria = p.HistorialClinico.CodigoHistoria,
+                    FechaApertura = p.HistorialClinico.FechaApertura,
+                    GrupoSanguineo = p.HistorialClinico.GrupoSanguineo,
+                    EstadoPacienteActual = p.HistorialClinico.EstadoPacienteActual
+                } : null
+            };
+        }
+    }
+
+    // DTO auxiliar para la eliminación (Ponlo en su propio archivo idealmente)
+    public class EliminarDTO
+    {
+        public string UsuarioEliminacion { get; set; } = "Sistema";
+        public string MotivoEliminacion { get; set; } = "Sin motivo";
     }
 }

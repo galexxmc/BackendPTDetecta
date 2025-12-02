@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendPTDetecta.Migrations
 {
     /// <inheritdoc />
-    public partial class ColumnaCalculadaCodigo : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -114,9 +114,9 @@ namespace BackendPTDetecta.Migrations
                 columns: new[] { "NU_ID_TIPO_SEGURO", "TX_CO_PAGO", "NU_ESTADO_REGISTRO", "FE_ELI", "FE_MOD", "FE_REG", "TX_MOTIVO_ELI", "TX_NOM_SEG", "NU_RUC_EMPRESA", "TX_TIP_COBER", "TX_ID_USU_ELI", "TX_ID_USU_MOD", "TX_ID_USU_REG" },
                 values: new object[,]
                 {
-                    { 1, "0%", 1, null, null, new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(165), null, "SIS", "20100000001", "Integral", null, null, "SYSTEM" },
-                    { 2, "0%", 1, null, null, new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(418), null, "EsSalud", "20500000002", "Laboral", null, null, "SYSTEM" },
-                    { 3, "20%", 1, null, null, new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(420), null, "EPS Pacifico", "20600000003", "Privada", null, null, "SYSTEM" }
+                    { 1, "0%", 1, null, null, new DateTime(2025, 12, 2, 20, 54, 43, 246, DateTimeKind.Utc).AddTicks(4623), null, "SIS", "20100000001", "Integral", null, null, "SYSTEM" },
+                    { 2, "0%", 1, null, null, new DateTime(2025, 12, 2, 20, 54, 43, 246, DateTimeKind.Utc).AddTicks(4863), null, "EsSalud", "20500000002", "Laboral", null, null, "SYSTEM" },
+                    { 3, "20%", 1, null, null, new DateTime(2025, 12, 2, 20, 54, 43, 246, DateTimeKind.Utc).AddTicks(4865), null, "EPS Pacifico", "20600000003", "Privada", null, null, "SYSTEM" }
                 });
 
             migrationBuilder.CreateIndex(

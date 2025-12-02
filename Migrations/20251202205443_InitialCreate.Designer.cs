@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendPTDetecta.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251127200648_ColumnaCalculadaCodigo")]
-    partial class ColumnaCalculadaCodigo
+    [Migration("20251202205443_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -308,7 +308,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 1,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(165),
+                            FechaRegistro = new DateTime(2025, 12, 2, 20, 54, 43, 246, DateTimeKind.Utc).AddTicks(4623),
                             NombreSeguro = "SIS",
                             RucEmpresa = "20100000001",
                             TipoCobertura = "Integral",
@@ -319,7 +319,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 2,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(418),
+                            FechaRegistro = new DateTime(2025, 12, 2, 20, 54, 43, 246, DateTimeKind.Utc).AddTicks(4863),
                             NombreSeguro = "EsSalud",
                             RucEmpresa = "20500000002",
                             TipoCobertura = "Laboral",
@@ -330,7 +330,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 3,
                             CoPago = "20%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 11, 27, 20, 6, 47, 586, DateTimeKind.Utc).AddTicks(420),
+                            FechaRegistro = new DateTime(2025, 12, 2, 20, 54, 43, 246, DateTimeKind.Utc).AddTicks(4865),
                             NombreSeguro = "EPS Pacifico",
                             RucEmpresa = "20600000003",
                             TipoCobertura = "Privada",
