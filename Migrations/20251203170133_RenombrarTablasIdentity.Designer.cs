@@ -3,6 +3,7 @@ using System;
 using BackendPTDetecta.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendPTDetecta.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251203170133_RenombrarTablasIdentity")]
+    partial class RenombrarTablasIdentity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,95 +24,6 @@ namespace BackendPTDetecta.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("BackendPTDetecta.Domain.Entities.ApplicationUser", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("TX_ID_USUARIO");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("NU_INTENTOS_FALLIDOS");
-
-                    b.Property<string>("Apellidos")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("TX_APELLIDOS");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("text")
-                        .HasColumnName("TX_CONCURRENCY_STAMP");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("TX_EMAIL");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("BL_EMAIL_CONFIRMADO");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("BL_BLOQUEO_ENABLED");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("FE_FIN_BLOQUEO");
-
-                    b.Property<string>("Nombres")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("TX_NOMBRES");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("TX_EMAIL_NORM");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("TX_USERNAME_NORM");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("text")
-                        .HasColumnName("TX_PASSWORD_HASH");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text")
-                        .HasColumnName("TX_TELEFONO");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("BL_TELEFONO_CONFIRMADO");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("text")
-                        .HasColumnName("TX_SECURITY_STAMP");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("BL_2FA_ENABLED");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("TX_USERNAME");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex");
-
-                    b.ToTable("SEG_USUARIOS", (string)null);
-                });
 
             modelBuilder.Entity("BackendPTDetecta.Domain.Entities.HistorialClinico", b =>
                 {
@@ -394,7 +308,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 1,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 12, 3, 17, 13, 44, 732, DateTimeKind.Utc).AddTicks(6915),
+                            FechaRegistro = new DateTime(2025, 12, 3, 17, 1, 33, 567, DateTimeKind.Utc).AddTicks(2865),
                             NombreSeguro = "SIS",
                             RucEmpresa = "20100000001",
                             TipoCobertura = "Integral",
@@ -405,7 +319,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 2,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 12, 3, 17, 13, 44, 732, DateTimeKind.Utc).AddTicks(7150),
+                            FechaRegistro = new DateTime(2025, 12, 3, 17, 1, 33, 567, DateTimeKind.Utc).AddTicks(3105),
                             NombreSeguro = "EsSalud",
                             RucEmpresa = "20500000002",
                             TipoCobertura = "Laboral",
@@ -416,7 +330,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 3,
                             CoPago = "20%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 12, 3, 17, 13, 44, 732, DateTimeKind.Utc).AddTicks(7152),
+                            FechaRegistro = new DateTime(2025, 12, 3, 17, 1, 33, 567, DateTimeKind.Utc).AddTicks(3107),
                             NombreSeguro = "EPS Pacifico",
                             RucEmpresa = "20600000003",
                             TipoCobertura = "Privada",
@@ -481,6 +395,85 @@ namespace BackendPTDetecta.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("SEG_ROL_CLAIMS", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("TX_ID_USUARIO");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("NU_INTENTOS_FALLIDOS");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text")
+                        .HasColumnName("TX_CONCURRENCY_STAMP");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("TX_EMAIL");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("BL_EMAIL_CONFIRMADO");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("BL_BLOQUEO_ENABLED");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("FE_FIN_BLOQUEO");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("TX_EMAIL_NORM");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("TX_USERNAME_NORM");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("TX_PASSWORD_HASH");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("TX_TELEFONO");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("BL_TELEFONO_CONFIRMADO");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text")
+                        .HasColumnName("TX_SECURITY_STAMP");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("BL_2FA_ENABLED");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("TX_USERNAME");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex");
+
+                    b.ToTable("SEG_USUARIOS", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -609,7 +602,7 @@ namespace BackendPTDetecta.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("BackendPTDetecta.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -618,7 +611,7 @@ namespace BackendPTDetecta.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("BackendPTDetecta.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -633,7 +626,7 @@ namespace BackendPTDetecta.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BackendPTDetecta.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -642,7 +635,7 @@ namespace BackendPTDetecta.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("BackendPTDetecta.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

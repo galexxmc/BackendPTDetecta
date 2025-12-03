@@ -1,16 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using BackendPTDetecta.Domain.Entities;
 
 namespace BackendPTDetecta.Infrastructure.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Paciente> Pacientes { get; set; }
         public DbSet<TipoSeguro> TiposSeguro { get; set; }
-        // Cambié el nombre del DbSet para que coincida con tu clase nueva
         public DbSet<HistorialClinico> HistorialesClinicos { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -18,10 +19,9 @@ namespace BackendPTDetecta.Infrastructure.Data
             optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }
 
-// --- AQUÍ ESTÁ LA MAGIA CENTRALIZADA ---
+        // --- LÓGICA DE AUDITORÍA (Tu código original) ---
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            // 1. Lógica robusta de Hora Perú (Mejor que AddHours(-5))
             var utcNow = DateTime.UtcNow;
             
             TimeZoneInfo zonaPeru;
@@ -29,42 +29,20 @@ namespace BackendPTDetecta.Infrastructure.Data
             catch { zonaPeru = TimeZoneInfo.FindSystemTimeZoneById("America/Lima"); }
 
             var fechaPeru = TimeZoneInfo.ConvertTimeFromUtc(utcNow, zonaPeru);
-
-            // 2. Quitar milisegundos
-            var fechaLimpia = new DateTime(
-                fechaPeru.Year, fechaPeru.Month, fechaPeru.Day,
-                fechaPeru.Hour, fechaPeru.Minute, fechaPeru.Second
-            );
+            var fechaLimpia = new DateTime(fechaPeru.Year, fechaPeru.Month, fechaPeru.Day, fechaPeru.Hour, fechaPeru.Minute, fechaPeru.Second);
 
             foreach (var entry in ChangeTracker.Entries<EntidadAuditable>())
             {
-                // A) NUEVO REGISTRO
                 if (entry.State == EntityState.Added)
                 {
                     entry.Entity.FechaRegistro = fechaLimpia;
                     entry.Entity.EstadoRegistro = 1;
                 }
-
-                // B) MODIFICACIÓN (Aquí detectamos si es Edición normal o Eliminación)
                 if (entry.State == EntityState.Modified)
                 {
-                    // Verificamos si se está dando de baja (Estado pasa a 0)
-                    // entry.Property(...).CurrentValue nos da el valor que acabamos de asignar en el Repo
                     var estadoActual = entry.Property(x => x.EstadoRegistro).CurrentValue;
-
-                    if (estadoActual == 0) 
-                    {
-                        // CASO: ELIMINACIÓN LÓGICA
-                        // Solo ponemos la fecha de eliminación. 
-                        // ¡NO tocamos FechaModificacion!
-                        entry.Entity.FechaEliminacion = fechaLimpia;
-                    }
-                    else
-                    {
-                        // CASO: EDICIÓN NORMAL
-                        // Aquí sí actualizamos la fecha de modificación
-                        entry.Entity.FechaModificacion = fechaLimpia;
-                    }
+                    if (estadoActual == 0) entry.Entity.FechaEliminacion = fechaLimpia;
+                    else entry.Entity.FechaModificacion = fechaLimpia;
                 }
             }
             return base.SaveChangesAsync(cancellationToken);
@@ -72,63 +50,117 @@ namespace BackendPTDetecta.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // 1. IMPORTANTE: Configuración Base de Identity
             base.OnModelCreating(modelBuilder);
 
-            // Filtros Globales (No traer eliminados)
+            // ==============================================================================
+            // 🛡️ PERSONALIZACIÓN TOTAL DE IDENTITY (Tablas y Columnas)
+            // ==============================================================================
+
+            // 1. TABLA USUARIOS (SEG_USUARIOS)
+            modelBuilder.Entity<ApplicationUser>(b =>
+            {
+                b.ToTable("SEG_USUARIOS");
+                b.Property(u => u.Id).HasColumnName("TX_ID_USUARIO");
+                b.Property(u => u.UserName).HasColumnName("TX_USERNAME");
+                b.Property(u => u.NormalizedUserName).HasColumnName("TX_USERNAME_NORM");
+                b.Property(u => u.Email).HasColumnName("TX_EMAIL");
+                b.Property(u => u.NormalizedEmail).HasColumnName("TX_EMAIL_NORM");
+                b.Property(u => u.EmailConfirmed).HasColumnName("BL_EMAIL_CONFIRMADO");
+                b.Property(u => u.PasswordHash).HasColumnName("TX_PASSWORD_HASH");
+                b.Property(u => u.SecurityStamp).HasColumnName("TX_SECURITY_STAMP");
+                b.Property(u => u.ConcurrencyStamp).HasColumnName("TX_CONCURRENCY_STAMP");
+                b.Property(u => u.PhoneNumber).HasColumnName("TX_TELEFONO");
+                b.Property(u => u.PhoneNumberConfirmed).HasColumnName("BL_TELEFONO_CONFIRMADO");
+                b.Property(u => u.TwoFactorEnabled).HasColumnName("BL_2FA_ENABLED");
+                b.Property(u => u.LockoutEnd).HasColumnName("FE_FIN_BLOQUEO");
+                b.Property(u => u.LockoutEnabled).HasColumnName("BL_BLOQUEO_ENABLED");
+                b.Property(u => u.AccessFailedCount).HasColumnName("NU_INTENTOS_FALLIDOS");
+                b.Property(u => u.Nombres).HasColumnName("TX_NOMBRES");
+                b.Property(u => u.Apellidos).HasColumnName("TX_APELLIDOS");
+            });
+
+            // 2. TABLA ROLES (SEG_ROLES)
+            modelBuilder.Entity<IdentityRole>(b =>
+            {
+                b.ToTable("SEG_ROLES");
+                b.Property(r => r.Id).HasColumnName("TX_ID_ROL");
+                b.Property(r => r.Name).HasColumnName("TX_NOMBRE_ROL");
+                b.Property(r => r.NormalizedName).HasColumnName("TX_NOMBRE_ROL_NORM");
+                b.Property(r => r.ConcurrencyStamp).HasColumnName("TX_CONCURRENCY_STAMP");
+            });
+
+            // 3. TABLA USUARIO_ROLES (SEG_USUARIO_ROLES) - Relación N a N
+            modelBuilder.Entity<IdentityUserRole<string>>(b =>
+            {
+                b.ToTable("SEG_USUARIO_ROLES");
+                b.Property(ur => ur.UserId).HasColumnName("TX_ID_USUARIO");
+                b.Property(ur => ur.RoleId).HasColumnName("TX_ID_ROL");
+            });
+
+            // 4. TABLA CLAIMS DE USUARIO (SEG_USUARIO_CLAIMS)
+            modelBuilder.Entity<IdentityUserClaim<string>>(b =>
+            {
+                b.ToTable("SEG_USUARIO_CLAIMS");
+                b.Property(uc => uc.Id).HasColumnName("NU_ID_CLAIM");
+                b.Property(uc => uc.UserId).HasColumnName("TX_ID_USUARIO");
+                b.Property(uc => uc.ClaimType).HasColumnName("TX_TIPO_CLAIM");
+                b.Property(uc => uc.ClaimValue).HasColumnName("TX_VALOR_CLAIM");
+            });
+
+            // 5. TABLA CLAIMS DE ROL (SEG_ROL_CLAIMS)
+            modelBuilder.Entity<IdentityRoleClaim<string>>(b =>
+            {
+                b.ToTable("SEG_ROL_CLAIMS");
+                b.Property(rc => rc.Id).HasColumnName("NU_ID_ROL_CLAIM");
+                b.Property(rc => rc.RoleId).HasColumnName("TX_ID_ROL");
+                b.Property(rc => rc.ClaimType).HasColumnName("TX_TIPO_CLAIM");
+                b.Property(rc => rc.ClaimValue).HasColumnName("TX_VALOR_CLAIM");
+            });
+
+            // 6. TABLA LOGINS EXTERNOS (SEG_USUARIO_LOGINS) - Google, Facebook, etc.
+            modelBuilder.Entity<IdentityUserLogin<string>>(b =>
+            {
+                b.ToTable("SEG_USUARIO_LOGINS");
+                b.Property(ul => ul.LoginProvider).HasColumnName("TX_PROVEEDOR");
+                b.Property(ul => ul.ProviderKey).HasColumnName("TX_LLAVE_PROVEEDOR");
+                b.Property(ul => ul.ProviderDisplayName).HasColumnName("TX_NOMBRE_PROVEEDOR");
+                b.Property(ul => ul.UserId).HasColumnName("TX_ID_USUARIO");
+            });
+
+            // 7. TABLA TOKENS DE USUARIO (SEG_USUARIO_TOKENS) - Recuperar pass, confirmar email
+            modelBuilder.Entity<IdentityUserToken<string>>(b =>
+            {
+                b.ToTable("SEG_USUARIO_TOKENS");
+                b.Property(ut => ut.UserId).HasColumnName("TX_ID_USUARIO");
+                b.Property(ut => ut.LoginProvider).HasColumnName("TX_PROVEEDOR");
+                b.Property(ut => ut.Name).HasColumnName("TX_NOMBRE_TOKEN");
+                b.Property(ut => ut.Value).HasColumnName("TX_VALOR_TOKEN");
+            });
+
+            // ==============================================================================
+            // 🏥 TUS TABLAS DE NEGOCIO (PACIENTES, ETC.)
+            // ==============================================================================
+
             modelBuilder.Entity<Paciente>().HasQueryFilter(x => x.EstadoRegistro == 1);
             modelBuilder.Entity<TipoSeguro>().HasQueryFilter(x => x.EstadoRegistro == 1);
             modelBuilder.Entity<HistorialClinico>().HasQueryFilter(x => x.EstadoRegistro == 1);
 
-            modelBuilder.Entity<Paciente>().Property(p => p.Codigo).HasComputedColumnSql("'P' || LPAD(\"NU_ID_PACIENTE\"::TEXT, 5, '0')", stored: true);
+            modelBuilder.Entity<Paciente>().Property(p => p.Codigo)
+                .HasComputedColumnSql("'P' || LPAD(\"NU_ID_PACIENTE\"::TEXT, 5, '0')", stored: true);
 
-            // CONFIGURACIÓN AVANZADA
+            modelBuilder.Entity<Paciente>().HasIndex(p => p.Dni).IsUnique();
 
-            // DNI Único (Regla de negocio estricta)
-            modelBuilder.Entity<Paciente>()
-                .HasIndex(p => p.Dni)
-                .IsUnique();
-
-            // Relación 1 a 1: Un Paciente tiene UN Historial
             modelBuilder.Entity<Paciente>()
                 .HasOne(p => p.HistorialClinico)
                 .WithOne(h => h.Paciente)
                 .HasForeignKey<HistorialClinico>(h => h.IdPaciente);
 
-            // DATOS SEMILLA (Con los nuevos campos RUC y Cobertura)
+            // TIPO_SEGUROS (Seed Data)
             modelBuilder.Entity<TipoSeguro>().HasData(
-                new TipoSeguro
-                {
-                    IdTipoSeguro = 1,
-                    NombreSeguro = "SIS",
-                    RucEmpresa = "20100000001",
-                    TipoCobertura = "Integral",
-                    CoPago = "0%",
-                    FechaRegistro = DateTime.UtcNow,
-                    EstadoRegistro = 1,
-                    UsuarioRegistro = "SYSTEM"
-                },
-                new TipoSeguro
-                {
-                    IdTipoSeguro = 2,
-                    NombreSeguro = "EsSalud",
-                    RucEmpresa = "20500000002",
-                    TipoCobertura = "Laboral",
-                    CoPago = "0%",
-                    FechaRegistro = DateTime.UtcNow,
-                    EstadoRegistro = 1,
-                    UsuarioRegistro = "SYSTEM"
-                },
-                new TipoSeguro
-                {
-                    IdTipoSeguro = 3,
-                    NombreSeguro = "EPS Pacifico",
-                    RucEmpresa = "20600000003",
-                    TipoCobertura = "Privada",
-                    CoPago = "20%",
-                    FechaRegistro = DateTime.UtcNow,
-                    EstadoRegistro = 1,
-                    UsuarioRegistro = "SYSTEM"
-                }
+                new TipoSeguro { IdTipoSeguro = 1, NombreSeguro = "SIS", RucEmpresa = "20100000001", TipoCobertura = "Integral", CoPago = "0%", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" },
+                new TipoSeguro { IdTipoSeguro = 2, NombreSeguro = "EsSalud", RucEmpresa = "20500000002", TipoCobertura = "Laboral", CoPago = "0%", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" },
+                new TipoSeguro { IdTipoSeguro = 3, NombreSeguro = "EPS Pacifico", RucEmpresa = "20600000003", TipoCobertura = "Privada", CoPago = "20%", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" }
             );
         }
     }
