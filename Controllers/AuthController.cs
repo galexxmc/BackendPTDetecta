@@ -43,14 +43,12 @@ namespace BackendPTDetecta.Controllers
             }
         }
 
-        // POST: api/Auth/forgot-password
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO request)
         {
             try
             {
                 var tokenResult = await _authService.ForgotPasswordAsync(request.Email);
-                // Retornamos el token visible solo para facilitar la prueba manual
                 return Ok(new { mensaje = "Revisa tu correo (simulado)", tokenDePrueba = tokenResult });
             }
             catch (Exception ex)
@@ -58,8 +56,7 @@ namespace BackendPTDetecta.Controllers
                 return BadRequest(new { mensaje = ex.Message });
             }
         }
-
-        // POST: api/Auth/reset-password
+        
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO request)
         {

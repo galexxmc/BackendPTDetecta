@@ -3,14 +3,12 @@ using BackendPTDetecta.Application.Interfaces;
 using BackendPTDetecta.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
-// --- NUEVOS IMPORTS PARA SEGURIDAD ---
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using BackendPTDetecta.Infrastructure.Services;
-using BackendPTDetecta.Domain.Entities; // Para IdentityService
-
+using BackendPTDetecta.Domain.Entities;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -21,25 +19,18 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-// Swagger (Recomendado tenerlo siempre)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 1. CORS
 builder.Services.AddCors(o => o.AddPolicy("AllowReact", p => 
     p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
-// 2. Base de Datos
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// ==========================================
-// 3. CONFIGURAR IDENTITY (USUARIOS) - ¡NUEVO!
-// ==========================================
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>     
 {
-    // Relajamos las reglas de password para la prueba técnica
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
@@ -49,9 +40,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// ==========================================
-// 4. CONFIGURAR JWT (TOKENS) - ¡NUEVO!
-// ==========================================
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -72,11 +60,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// ==========================================
-// 5. INYECCIÓN DE DEPENDENCIAS
-// ==========================================
 builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
-builder.Services.AddScoped<IAuthService, IdentityService>(); // <--- CONECTAMOS EL SERVICIO DE AUTH
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
@@ -89,11 +74,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowReact");
 
-// ==========================================
-// 6. ACTIVAR MIDDLEWARE DE SEGURIDAD
-// ==========================================
-app.UseAuthentication(); // <--- ¡CRÍTICO! Primero verificamos "quién eres"
-app.UseAuthorization();  // <--- Luego verificamos "qué puedes hacer"
+app.UseAuthentication(); 
+app.UseAuthorization(); 
 
 app.MapControllers();
 

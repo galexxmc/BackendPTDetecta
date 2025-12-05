@@ -10,6 +10,7 @@ namespace BackendPTDetecta.Infrastructure.Data
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+        // TABLAS DE NEGOCIO
         public DbSet<Paciente> Pacientes { get; set; }
         public DbSet<TipoSeguro> TiposSeguro { get; set; }
         public DbSet<HistorialClinico> HistorialesClinicos { get; set; }
@@ -19,11 +20,11 @@ namespace BackendPTDetecta.Infrastructure.Data
             optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }
 
-        // --- LÓGICA DE AUDITORÍA (Tu código original) ---
+        // MÉTODO DE AUDITORÍA
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var utcNow = DateTime.UtcNow;
-            
+
             TimeZoneInfo zonaPeru;
             try { zonaPeru = TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time"); }
             catch { zonaPeru = TimeZoneInfo.FindSystemTimeZoneById("America/Lima"); }
@@ -48,16 +49,13 @@ namespace BackendPTDetecta.Infrastructure.Data
             return base.SaveChangesAsync(cancellationToken);
         }
 
+        // MÉTODO DE CONFIGURACIÓN DE LAS TABLAS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // 1. IMPORTANTE: Configuración Base de Identity
+            // CONFIGURACIÓN DE TABLAS DE SEGURIDAD USUARIOS
+
             base.OnModelCreating(modelBuilder);
 
-            // ==============================================================================
-            // 🛡️ PERSONALIZACIÓN TOTAL DE IDENTITY (Tablas y Columnas)
-            // ==============================================================================
-
-            // 1. TABLA USUARIOS (SEG_USUARIOS)
             modelBuilder.Entity<ApplicationUser>(b =>
             {
                 b.ToTable("SEG_USUARIOS");
@@ -80,7 +78,6 @@ namespace BackendPTDetecta.Infrastructure.Data
                 b.Property(u => u.Apellidos).HasColumnName("TX_APELLIDOS");
             });
 
-            // 2. TABLA ROLES (SEG_ROLES)
             modelBuilder.Entity<IdentityRole>(b =>
             {
                 b.ToTable("SEG_ROLES");
@@ -90,7 +87,6 @@ namespace BackendPTDetecta.Infrastructure.Data
                 b.Property(r => r.ConcurrencyStamp).HasColumnName("TX_CONCURRENCY_STAMP");
             });
 
-            // 3. TABLA USUARIO_ROLES (SEG_USUARIO_ROLES) - Relación N a N
             modelBuilder.Entity<IdentityUserRole<string>>(b =>
             {
                 b.ToTable("SEG_USUARIO_ROLES");
@@ -98,7 +94,6 @@ namespace BackendPTDetecta.Infrastructure.Data
                 b.Property(ur => ur.RoleId).HasColumnName("TX_ID_ROL");
             });
 
-            // 4. TABLA CLAIMS DE USUARIO (SEG_USUARIO_CLAIMS)
             modelBuilder.Entity<IdentityUserClaim<string>>(b =>
             {
                 b.ToTable("SEG_USUARIO_CLAIMS");
@@ -108,7 +103,6 @@ namespace BackendPTDetecta.Infrastructure.Data
                 b.Property(uc => uc.ClaimValue).HasColumnName("TX_VALOR_CLAIM");
             });
 
-            // 5. TABLA CLAIMS DE ROL (SEG_ROL_CLAIMS)
             modelBuilder.Entity<IdentityRoleClaim<string>>(b =>
             {
                 b.ToTable("SEG_ROL_CLAIMS");
@@ -118,7 +112,6 @@ namespace BackendPTDetecta.Infrastructure.Data
                 b.Property(rc => rc.ClaimValue).HasColumnName("TX_VALOR_CLAIM");
             });
 
-            // 6. TABLA LOGINS EXTERNOS (SEG_USUARIO_LOGINS) - Google, Facebook, etc.
             modelBuilder.Entity<IdentityUserLogin<string>>(b =>
             {
                 b.ToTable("SEG_USUARIO_LOGINS");
@@ -128,7 +121,6 @@ namespace BackendPTDetecta.Infrastructure.Data
                 b.Property(ul => ul.UserId).HasColumnName("TX_ID_USUARIO");
             });
 
-            // 7. TABLA TOKENS DE USUARIO (SEG_USUARIO_TOKENS) - Recuperar pass, confirmar email
             modelBuilder.Entity<IdentityUserToken<string>>(b =>
             {
                 b.ToTable("SEG_USUARIO_TOKENS");
@@ -138,9 +130,7 @@ namespace BackendPTDetecta.Infrastructure.Data
                 b.Property(ut => ut.Value).HasColumnName("TX_VALOR_TOKEN");
             });
 
-            // ==============================================================================
-            // 🏥 TUS TABLAS DE NEGOCIO (PACIENTES, ETC.)
-            // ==============================================================================
+            // CONFIGURACIÓN DE TABLAS DE NEGOCIO
 
             modelBuilder.Entity<Paciente>().HasQueryFilter(x => x.EstadoRegistro == 1);
             modelBuilder.Entity<TipoSeguro>().HasQueryFilter(x => x.EstadoRegistro == 1);
@@ -156,7 +146,6 @@ namespace BackendPTDetecta.Infrastructure.Data
                 .WithOne(h => h.Paciente)
                 .HasForeignKey<HistorialClinico>(h => h.IdPaciente);
 
-            // TIPO_SEGUROS (Seed Data)
             modelBuilder.Entity<TipoSeguro>().HasData(
                 new TipoSeguro { IdTipoSeguro = 1, NombreSeguro = "SIS", RucEmpresa = "20100000001", TipoCobertura = "Integral", CoPago = "0%", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" },
                 new TipoSeguro { IdTipoSeguro = 2, NombreSeguro = "EsSalud", RucEmpresa = "20500000002", TipoCobertura = "Laboral", CoPago = "0%", FechaRegistro = DateTime.UtcNow, EstadoRegistro = 1, UsuarioRegistro = "SYSTEM" },
