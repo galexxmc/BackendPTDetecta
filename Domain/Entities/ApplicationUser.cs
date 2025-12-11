@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
 namespace BackendPTDetecta.Domain.Entities
 {
-    // Heredamos de IdentityUser para tener todo lo de Microsoft + lo nuestro
     public class ApplicationUser : IdentityUser
     {
-        public string Nombres { get; set; } = string.Empty;
-        public string Apellidos { get; set; } = string.Empty;
-        
-        // Aquí podrías agregar DNI, FotoUrl, etc. en el futuro
+        [MaxLength(100)] public string Nombres { get; set; } = string.Empty;
+        [MaxLength(100)] public string Apellidos { get; set; } = string.Empty;
+        [MaxLength(20)] public string CodigoUsuario { get; set; } = string.Empty;
     }
 }

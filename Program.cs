@@ -9,26 +9,56 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using BackendPTDetecta.Infrastructure.Services;
 using BackendPTDetecta.Domain.Entities;
-
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+// Asegúrate de tener este using para el Interceptor:
+using BackendPTDetecta.Infrastructure.Persistence.Interceptors; 
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. CONFIGURACIÓN DE POSTGRES (Fechas)
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+// 2. CONTROLLERS & SWAGGER
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// 3. CORS
 builder.Services.AddCors(o => o.AddPolicy("AllowReact", p => 
     p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+// ---------------------------------------------------------
+// BLOQUE DE AUDITORÍA Y SERVICIOS (AQUÍ ESTÁ LA MAGIA)
+// ---------------------------------------------------------
 
+// A. Permitir leer el usuario logueado desde el Token JWT
+builder.Services.AddHttpContextAccessor(); // <--- NUEVO: VITAL
+
+// B. Registrar tus servicios de infraestructura
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>(); // <--- NUEVO
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
+
+// C. Registrar el Interceptor
+builder.Services.AddScoped<AuditoriaInterceptor>(); // <--- NUEVO
+
+// D. Configurar DB Context + Interceptor
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+{
+    // Resolvemos el interceptor desde el contenedor de inyección de dependencias
+    var interceptor = sp.GetRequiredService<AuditoriaInterceptor>();
+
+    options.UseNpgsql(connectionString)
+           .AddInterceptors(interceptor); // <--- NUEVO: Aquí conectamos el cerebro de la auditoría
+});
+
+// ---------------------------------------------------------
+
+// 4. IDENTITY (Usuarios y Roles)
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>     
 {
     options.Password.RequireDigit = false;
@@ -40,6 +70,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
+// 5. JWT (Autenticación)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -60,11 +91,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-
 var app = builder.Build();
 
+// 6. PIPELINE HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

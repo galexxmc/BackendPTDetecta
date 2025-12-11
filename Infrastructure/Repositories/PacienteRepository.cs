@@ -14,13 +14,13 @@ namespace BackendPTDetecta.Infrastructure.Repositories
             _context = context;
         }
 
-        // 1. LECTURA: Traer datos con relaciones (Eager Loading)
+        // 1. LECTURA (Sin cambios, esto estaba perfecto)
         public async Task<IEnumerable<Paciente>> ObtenerTodosConDetalleAsync()
         {
             return await _context.Pacientes
                 .Include(p => p.TipoSeguro)      
-                .Include(p => p.HistorialClinico) // JOIN con Historial
-                .Where(p => p.EstadoRegistro == 1) // Solo activos (Soft Delete)
+                .Include(p => p.HistorialClinico) 
+                .Where(p => p.EstadoRegistro == 1) 
                 .OrderByDescending(p => p.FechaRegistro)
                 .ToListAsync();
         }
@@ -33,85 +33,77 @@ namespace BackendPTDetecta.Infrastructure.Repositories
                 .FirstOrDefaultAsync(p => p.IdPaciente == id);
         }
 
-        // 2. ESCRITURA TRANSACCIONAL (ACID)
-        // Aquí ocurre la magia: Creamos Paciente + Historial en una sola operación atómica.
+        // 2. CREACIÓN (LIMPIEZA MAYOR)
         public async Task<Paciente> CrearAsync(Paciente paciente)
         {
-            // Iniciamos una transacción de base de datos manual
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // PASO A: Guardar el Paciente
+                // PASO A: Guardar Paciente
+                // NOTA: Ya no seteamos FechaRegistro ni UsuarioRegistro aquí.
+                // El Interceptor lo hará al detectar EntityState.Added.
                 _context.Pacientes.Add(paciente);
-                await _context.SaveChangesAsync(); // Al guardar, SQL Server genera el IdPaciente
+                await _context.SaveChangesAsync(); 
 
-                // PASO B: Generar el Historial Clínico automáticamente
-                // Usamos el ID recién generado del paciente
+                // PASO B: Generar Historial
                 var historial = new HistorialClinico
                 {
                     IdPaciente = paciente.IdPaciente,
-                    CodigoHistoria = $"HC-{DateTime.Now.Year}-{paciente.IdPaciente:D4}", // Ej: HC-2025-0045
-                    FechaApertura = DateTime.UtcNow,
-                    UsuarioRegistro = paciente.UsuarioRegistro,
+                    CodigoHistoria = $"HC-{DateTime.Now.Year}-{paciente.IdPaciente:D4}",
+                    FechaApertura = DateTime.Now, // Fecha de negocio (está bien dejarla si es explícita)
                     EstadoPacienteActual = "Ingresado",
-                    
-                    // Valores por defecto para evitar nulos en BD
                     GrupoSanguineo = "Pendiente",
                     AlergiasPrincipales = "Ninguna reportada",
                     EnfermedadesCronicas = "Ninguna reportada"
+                    // ELIMINADO: UsuarioRegistro. El interceptor también llenará esto en el Historial.
                 };
 
                 _context.HistorialesClinicos.Add(historial);
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(); // <-- El Interceptor vuelve a actuar aquí para el Historial
 
-                // PASO C: Si todo salió bien, confirmamos los cambios en la BD
                 await transaction.CommitAsync();
-
                 return paciente;
             }
             catch (Exception)
             {
-                // PASO D: Si algo falló (ej: se cayó el internet a medio camino), 
-                // deshacemos TODO. No se crea el paciente "huérfano" sin historial.
                 await transaction.RollbackAsync();
                 throw; 
             }
         }
 
-        // 3. ACTUALIZACIÓN
+        // 3. ACTUALIZACIÓN (AUTOMÁTICA)
         public async Task<bool> ActualizarAsync(Paciente paciente)
         {
+            // Al hacer Update, el estado pasa a Modified.
+            // El Interceptor actualizará automáticamente FechaModificacion y UsuarioModificacion.
             _context.Pacientes.Update(paciente);
             var filasAfectadas = await _context.SaveChangesAsync();
             return filasAfectadas > 0;
         }
 
-        // 4. ELIMINACIÓN LÓGICA (Soft Delete)
-        public async Task<bool> EliminarLogicoAsync(int id, string usuario, string motivo)
+        // 4. ELIMINACIÓN LÓGICA (AQUÍ ESTABA TU PROBLEMA DE "AdminWeb")
+        // Fíjate que ya no necesito pedir el parámetro 'usuario' en el método
+        public async Task<bool> EliminarLogicoAsync(int id, string motivo) 
         {
             var paciente = await _context.Pacientes.FindAsync(id);
             if (paciente == null) return false;
 
-            // No borramos el registro (Remove), solo cambiamos su estado
+            // SOLO CAMBIAMOS EL ESTADO Y EL MOTIVO
             paciente.EstadoRegistro = 0; 
-            paciente.UsuarioEliminacion = usuario;
             paciente.MotivoEliminacion = motivo;
-            paciente.FechaEliminacion = DateTime.UtcNow;
 
+            // ELIMINADO: paciente.UsuarioEliminacion = ...
+            // ELIMINADO: paciente.FechaEliminacion = ...
+            
+            // MAGIA: Al llamar a SaveChanges, el Interceptor ve que EstadoRegistro cambió a 0
+            // y él mismo pone "gmonje" y la fecha actual.
             await _context.SaveChangesAsync();
+            
             return true;
         }
 
         // 5. RECUPERACIÓN (Habilitar)
-        public async Task<Paciente?> BuscarEliminadoPorDniAsync(string dni)
-        {
-            // Usamos IgnoreQueryFilters() por si en el futuro configuras filtros globales en el DbContext
-            return await _context.Pacientes
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(p => p.Dni == dni && p.EstadoRegistro == 0);
-        }
-
         public async Task<bool> HabilitarPacienteAsync(int id)
         {
             var paciente = await _context.Pacientes
@@ -126,9 +118,9 @@ namespace BackendPTDetecta.Infrastructure.Repositories
             paciente.MotivoEliminacion = null;
             paciente.FechaEliminacion = null;
             
-            // Auditoría de restauración
-            paciente.UsuarioModificacion = "Sistema Recuperación";
-            paciente.FechaModificacion = DateTime.UtcNow;
+            // ELIMINADO: Auditoría manual. 
+            // Al cambiar el estado, cuenta como una Modificación. 
+            // El interceptor pondrá FechaModificacion y UsuarioModificacion (gmonje) automáticamente.
 
             await _context.SaveChangesAsync();
             return true;
@@ -139,6 +131,14 @@ namespace BackendPTDetecta.Infrastructure.Repositories
         {
             return await _context.Pacientes
                 .AnyAsync(p => p.Dni == dni && p.EstadoRegistro == 1);
+        }
+
+        // Método auxiliar para la recuperación (sin cambios)
+        public async Task<Paciente?> BuscarEliminadoPorDniAsync(string dni)
+        {
+            return await _context.Pacientes
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Dni == dni && p.EstadoRegistro == 0);
         }
     }
 }

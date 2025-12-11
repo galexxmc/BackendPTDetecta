@@ -13,7 +13,6 @@ namespace BackendPTDetecta.Application.Interfaces
         Task<bool> ActualizarAsync(Paciente paciente);
 
         // Eliminar Paciente
-        Task<bool> EliminarLogicoAsync(int id, string usuario, string motivo);
 
         // Recuperar Paciente
         Task<Paciente?> BuscarEliminadoPorDniAsync(string dni);
@@ -21,6 +20,9 @@ namespace BackendPTDetecta.Application.Interfaces
 
         // Validación de Dominio
         Task<bool> ExisteDniAsync(string dni);
+        
+        // Eliminar Paciente
+        Task<bool> EliminarLogicoAsync(int id, string motivo);
 
     }
 }

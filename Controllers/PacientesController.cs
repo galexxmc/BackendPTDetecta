@@ -107,7 +107,7 @@ namespace BackendPTDetecta.Controllers
         [HttpPut("eliminar/{id}")]
         public async Task<IActionResult> DeleteLogico(int id, [FromBody] EliminarDTO data) // Usamos DTO, no dynamic
         {
-            var exito = await _repository.EliminarLogicoAsync(id, data.UsuarioEliminacion, data.MotivoEliminacion);
+            var exito = await _repository.EliminarLogicoAsync(id, data.MotivoEliminacion);
             if (!exito) return NotFound();
 
             return NoContent();
