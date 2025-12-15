@@ -1,31 +1,57 @@
-# 🏥 PT Detecta - API Backend
+# 🏥 PT Detecta – Backend API
 
 ![.NET](https://img.shields.io/badge/.NET%209.0-512BD4?style=for-the-badge&logo=.net&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20Onion-success?style=for-the-badge)
 
-API RESTful robusta y escalable para la gestión de pacientes e historiales clínicos.  
-Desarrollada con **.NET 9** siguiendo principios de **Clean Architecture**.
+## 📋 Descripción
 
-🔗 **URL Producción:**  
-https://backendptdetecta.onrender.com
+**PT Detecta Backend** es el núcleo del sistema de detección temprana de riesgos de aprendizaje.  
+Esta **API RESTful** centraliza la lógica de negocio, la seguridad y el acceso a datos, proporcionando servicios **seguros, escalables y mantenibles** para las aplicaciones cliente.
+
+El sistema está desarrollado sobre **.NET 9**, priorizando buenas prácticas de ingeniería de software y un diseño desacoplado.
 
 ---
 
-## 🛠️ Configuración y Ejecución Local
+## 🏗️ Arquitectura y Tecnologías
 
-Sigue estos pasos para levantar la API en tu entorno local.
+El proyecto sigue el patrón de **Clean Architecture (Onion Architecture)**, desacoplando la lógica de negocio de la infraestructura externa y facilitando la evolución del sistema.
 
-### 📌 Prerrequisitos
+### 🧰 Stack Tecnológico
 
-Asegúrate de tener instalado:
+- **Core:** .NET 9 (C#)
+- **Base de Datos:** PostgreSQL
+- **ORM:** Entity Framework Core (Code First)
+- **Documentación:** Swagger / OpenAPI
+
+### 🧱 Estructura de Capas
+
+1. **Domain**  
+   Entidades y reglas de negocio puras (sin dependencias externas).
+
+2. **Application**  
+   Casos de uso, DTOs e interfaces.
+
+3. **Infrastructure**  
+   Implementaciones de persistencia, repositorios y servicios externos.
+
+4. **API**  
+   Controladores REST, configuración y middlewares.
+
+---
+
+## ⚙️ Guía de Ejecución Local
+
+Sigue estos pasos para ejecutar la API en tu entorno local.
+
+### 1️⃣ Prerrequisitos
 
 - **.NET SDK 9.0**
-- **PostgreSQL**
+- **PostgreSQL** en ejecución
 
 ---
 
-## 📥 1. Clonar el Repositorio
+### 2️⃣ Clonar el Repositorio
 
 ```bash
 git clone https://github.com/tu-usuario/BackendPTDetecta.git
@@ -34,15 +60,9 @@ cd BackendPTDetecta
 
 ---
 
-## 🗄️ 2. Configurar la Base de Datos
+### 3️⃣ Configuración de Base de Datos
 
-Crea una base de datos en PostgreSQL llamada:
-
-```text
-DetectaDB
-```
-
-Luego, abre el archivo `appsettings.json` y actualiza la cadena de conexión:
+Ubica el archivo `appsettings.json` en el proyecto **API** y configura la cadena de conexión:
 
 ```json
 "ConnectionStrings": {
@@ -52,9 +72,9 @@ Luego, abre el archivo `appsettings.json` y actualiza la cadena de conexión:
 
 ---
 
-## 🧩 3. Aplicar Migraciones
+### 4️⃣ Generar la Base de Datos
 
-Ejecuta las migraciones de Entity Framework Core:
+Ejecuta las migraciones para crear automáticamente la estructura:
 
 ```bash
 dotnet ef database update
@@ -62,37 +82,17 @@ dotnet ef database update
 
 ---
 
-## ▶️ 4. Ejecutar la Aplicación (API)
-
-Inicia el servidor de desarrollo:
+### 5️⃣ Iniciar la API
 
 ```bash
 dotnet watch run
 ```
 
-ℹ️ La API estará disponible en:
-
-- `http://localhost:5036` *(si está configurado ese puerto)*
-- o en los puertos predeterminados `5000 / 5001`
-
-Revisa el archivo `launchSettings.json` si tienes dudas.
-
-📄 **Swagger:**  
-http://localhost:5036/swagger
-
----
-
-## 🏗️ Arquitectura
-
-El proyecto sigue los principios de **Clean Architecture (Monolito Modular)**:
-
-- **Domain** → Entidades y lógica de negocio
-- **Application** → Casos de uso e interfaces
-- **Infrastructure** → EF Core, repositorios e Identity
-- **API** → Controladores REST y configuración
+📍 **API:** http://localhost:5036  
+📄 **Swagger:** http://localhost:5036/swagger
 
 ---
 
 ## 👨‍💻 Autor
 
-Desarrollador: **Gherson Alexis**
+Desarrollado por **Gherson Alexis**
