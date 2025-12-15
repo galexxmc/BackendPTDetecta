@@ -1,98 +1,166 @@
-# 🏥 PT Detecta – Backend API
+# PT Detecta – Backend (API REST)
 
-![.NET](https://img.shields.io/badge/.NET%209.0-512BD4?style=for-the-badge&logo=.net&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
-![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20Onion-success?style=for-the-badge)
+Backend API para la gestión clínica básica:
+- Registro e inicio de sesión de usuarios (ASP.NET Core Identity + JWT).
+- Gestión de **pacientes** (listar, crear, editar, eliminación lógica y re-habilitar).
+- Gestión de **historial clínico** asociado a pacientes.
+- Catálogo de **tipos de seguro**.
+- Auditoría automática (usuario/fechas) en altas, modificaciones y eliminación lógica.
 
-## 📋 Descripción
+> Nota: este repositorio contiene un único proyecto .NET (`BackendPTDetecta.csproj`) con separación por carpetas (estilo Clean Architecture/Onion).
 
-**PT Detecta Backend** es el núcleo del sistema de detección temprana de riesgos de aprendizaje.  
-Esta **API RESTful** centraliza la lógica de negocio, la seguridad y el acceso a datos, proporcionando servicios **seguros, escalables y mantenibles** para las aplicaciones cliente.
+## Demo / despliegue
+Si el proyecto está desplegado, la URL usada en este repositorio es:
+- https://backendptdetecta.onrender.com
 
-El sistema está desarrollado sobre **.NET 9**, priorizando buenas prácticas de ingeniería de software y un diseño desacoplado.
+## Tecnologías
+- .NET 9 (ASP.NET Core Web API)
+- Entity Framework Core 9 (Code First + migraciones)
+- PostgreSQL (Npgsql EF Core Provider)
+- ASP.NET Core Identity
+- JWT Bearer Authentication
+- Docker (Dockerfile incluido)
 
----
+## Arquitectura (Clean / Onion por capas)
+El código está organizado por capas para separar responsabilidades:
 
-## 🏗️ Arquitectura y Tecnologías
+- `Domain/`: entidades y reglas de negocio (núcleo).
+- `Application/`: DTOs e interfaces (contratos) que definen los casos de uso/servicios.
+- `Infrastructure/`: persistencia EF Core, repositorios e implementación de servicios.
+- `Controllers/`: capa de presentación (endpoints HTTP).
 
-El proyecto sigue el patrón de **Clean Architecture (Onion Architecture)**, desacoplando la lógica de negocio de la infraestructura externa y facilitando la evolución del sistema.
+Además, existe un interceptor de EF Core para auditoría:
+- `Infrastructure/Persistence/Interceptors/AuditoriaInterceptor.cs`
 
-### 🧰 Stack Tecnológico
+## Endpoints principales
+Base path: `/api`
 
-- **Core:** .NET 9 (C#)
-- **Base de Datos:** PostgreSQL
-- **ORM:** Entity Framework Core (Code First)
-- **Documentación:** Swagger / OpenAPI
+- Autenticación:
+  - `POST /api/Auth/register`
+  - `POST /api/Auth/login`
+  - `POST /api/Auth/forgot-password`
+  - `POST /api/Auth/reset-password`
+- Pacientes:
+  - `GET /api/Pacientes`
+  - `GET /api/Pacientes/{id}`
+  - `POST /api/Pacientes`
+  - `PUT /api/Pacientes/{id}`
+  - `PUT /api/Pacientes/eliminar/{id}`
+  - `GET /api/Pacientes/buscar-eliminado/{dni}`
+  - `PUT /api/Pacientes/habilitar/{id}`
+- Historial clínico:
+  - `GET /api/HistorialClinico/paciente/{idPaciente}`
+  - `PUT /api/HistorialClinico/paciente/{idPaciente}`
+- Tipos de seguro:
+  - `GET /api/TiposSeguro`
 
-### 🧱 Estructura de Capas
+## Ejecutar en local (guía para un usuario nuevo)
 
-1. **Domain**  
-   Entidades y reglas de negocio puras (sin dependencias externas).
+### Prerrequisitos
+- .NET SDK 9
+- PostgreSQL 16 (local o Docker)
 
-2. **Application**  
-   Casos de uso, DTOs e interfaces.
-
-3. **Infrastructure**  
-   Implementaciones de persistencia, repositorios y servicios externos.
-
-4. **API**  
-   Controladores REST, configuración y middlewares.
-
----
-
-## ⚙️ Guía de Ejecución Local
-
-Sigue estos pasos para ejecutar la API en tu entorno local.
-
-### 1️⃣ Prerrequisitos
-
-- **.NET SDK 9.0**
-- **PostgreSQL** en ejecución
-
----
-
-### 2️⃣ Clonar el Repositorio
-
+### 1) Clonar
 ```bash
-git clone https://github.com/tu-usuario/BackendPTDetecta.git
+git clone https://github.com/galexxmc/BackendPTDetecta.git
 cd BackendPTDetecta
 ```
 
----
+### 2) Configurar la base de datos
+La API espera una conexión PostgreSQL en `ConnectionStrings:DefaultConnection`.
 
-### 3️⃣ Configuración de Base de Datos
+Opción A: PostgreSQL con Docker
+```bash
+docker run --name pt-detecta-postgres -d \
+  -e POSTGRES_DB=DetectaDB \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 postgres:16
+```
 
-Ubica el archivo `appsettings.json` en el proyecto **API** y configura la cadena de conexión:
+Opción B: PostgreSQL instalado localmente
+- Crea una base de datos, por ejemplo: `DetectaDB`
+- Asegura un usuario/contraseña con permisos sobre esa DB
 
+### 3) Configuración (appsettings)
+La configuración vive en `appsettings.json`.
+
+Para desarrollo local se recomienda **NO** commitear credenciales reales. Puedes:
+- Editar `appsettings.json` localmente, o
+- Crear/ajustar `appsettings.Development.json` con tus valores.
+
+Ejemplo (recomendado) de `appsettings.Development.json`:
 ```json
-"ConnectionStrings": {
-  "DefaultConnection": "Host=localhost;Database=DetectaDB;Username=postgres;Password=tu_password"
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=DetectaDB;Username=postgres;Password=postgres"
+  },
+  "Jwt": {
+    "Key": "REEMPLAZA_POR_UN_SECRETO_LARGO",
+    "Issuer": "DetectaApi",
+    "Audience": "DetectaFront"
+  }
 }
 ```
 
----
+Alternativa: variables de entorno (útil en Docker/CI)
+- `ConnectionStrings__DefaultConnection`
+- `Jwt__Key`
+- `Jwt__Issuer`
+- `Jwt__Audience`
 
-### 4️⃣ Generar la Base de Datos
+### 4) Restaurar dependencias
+```bash
+dotnet restore
+```
 
-Ejecuta las migraciones para crear automáticamente la estructura:
+### 5) Aplicar migraciones (crear esquema en la DB)
+Este repositorio ya incluye migraciones en `Migrations/`.
 
+1) Instala la herramienta EF (si no la tienes):
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+2) Ejecuta las migraciones:
 ```bash
 dotnet ef database update
 ```
 
----
-
-### 5️⃣ Iniciar la API
-
+### 6) Ejecutar la API
 ```bash
-dotnet watch run
+dotnet run
 ```
 
-📍 **API:** http://localhost:5036  
-📄 **Swagger:** http://localhost:5036/swagger
+Puertos por defecto (según `Properties/launchSettings.json`):
+- HTTP: `http://localhost:5036`
+- HTTPS: `https://localhost:7278`
+
+### 7) Probar rápidamente
+Hay un archivo de ejemplo: `BackendPTDetecta.http`.
+
+También puedes probar (ejemplo):
+- `GET http://localhost:5036/api/TiposSeguro`
+
+## Ejecutar con Docker (opcional)
+Construir imagen:
+```bash
+docker build -t pt-detecta-backend .
+```
+
+Correr contenedor (la imagen expone `8080`):
+```bash
+docker run --rm -p 8080:8080 \
+  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=DetectaDB;Username=postgres;Password=postgres" \
+  -e Jwt__Key="REEMPLAZA_POR_UN_SECRETO_LARGO" \
+  -e Jwt__Issuer="DetectaApi" \
+  -e Jwt__Audience="DetectaFront" \
+  pt-detecta-backend
+```
+
+## Estructura del proyecto (resumen)
+- `Program.cs`: configuración de servicios (DbContext, Identity, JWT, CORS) y pipeline HTTP.
+- `Infrastructure/Data/ApplicationDbContext.cs`: DbContext + configuración de Identity + filtros globales + seed de `TiposSeguro`.
+- `Controllers/`: endpoints HTTP.
 
 ---
-
-## 👨‍💻 Autor
-
-Desarrollado por **Gherson Alexis**

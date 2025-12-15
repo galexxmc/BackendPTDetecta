@@ -17,13 +17,11 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. CONFIGURACIÓN DE POSTGRES (Fechas)
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-// 2. CONTROLLERS & SWAGGER
+// 2. CONTROLLERS
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 // 3. CORS
 builder.Services.AddCors(o => o.AddPolicy("AllowReact", p => 
@@ -94,11 +92,6 @@ builder.Services.AddAuthentication(options =>
 var app = builder.Build();
 
 // 6. PIPELINE HTTP
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReact");
