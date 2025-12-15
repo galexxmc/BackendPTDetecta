@@ -40,9 +40,6 @@ namespace BackendPTDetecta.Infrastructure.Repositories
 
             try
             {
-                // PASO A: Guardar Paciente
-                // NOTA: Ya no seteamos FechaRegistro ni UsuarioRegistro aquí.
-                // El Interceptor lo hará al detectar EntityState.Added.
                 _context.Pacientes.Add(paciente);
                 await _context.SaveChangesAsync(); 
 
@@ -51,11 +48,12 @@ namespace BackendPTDetecta.Infrastructure.Repositories
                 {
                     IdPaciente = paciente.IdPaciente,
                     CodigoHistoria = $"HC-{DateTime.Now.Year}-{paciente.IdPaciente:D4}",
-                    FechaApertura = DateTime.Now, // Fecha de negocio (está bien dejarla si es explícita)
+                    FechaApertura = DateTime.Now,
                     EstadoPacienteActual = "Ingresado",
                     GrupoSanguineo = "Pendiente",
                     AlergiasPrincipales = "Ninguna reportada",
-                    EnfermedadesCronicas = "Ninguna reportada"
+                    EnfermedadesCronicas = "Ninguna reportada",
+                    AntecedentesHereditarios = "Ninguna reportada"
                     // ELIMINADO: UsuarioRegistro. El interceptor también llenará esto en el Historial.
                 };
 

@@ -3,6 +3,7 @@ using System;
 using BackendPTDetecta.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendPTDetecta.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251215150204_EliminarColumnaEdad")]
+    partial class EliminarColumnaEdad
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -268,6 +271,10 @@ namespace BackendPTDetecta.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("FE_REG");
 
+                    b.Property<int?>("IdHistoriaClinica")
+                        .HasColumnType("integer")
+                        .HasColumnName("NU_ID_HIS_CLINICA");
+
                     b.Property<int?>("IdTipoSeguro")
                         .HasColumnType("integer")
                         .HasColumnName("NU_ID_TIPO_SEGURO");
@@ -393,7 +400,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 1,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 12, 15, 15, 39, 53, 553, DateTimeKind.Utc).AddTicks(6688),
+                            FechaRegistro = new DateTime(2025, 12, 15, 15, 2, 4, 92, DateTimeKind.Utc).AddTicks(6561),
                             NombreSeguro = "SIS",
                             RucEmpresa = "20100000001",
                             TipoCobertura = "Integral",
@@ -404,7 +411,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 2,
                             CoPago = "0%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 12, 15, 15, 39, 53, 553, DateTimeKind.Utc).AddTicks(6951),
+                            FechaRegistro = new DateTime(2025, 12, 15, 15, 2, 4, 92, DateTimeKind.Utc).AddTicks(6827),
                             NombreSeguro = "EsSalud",
                             RucEmpresa = "20500000002",
                             TipoCobertura = "Laboral",
@@ -415,7 +422,7 @@ namespace BackendPTDetecta.Migrations
                             IdTipoSeguro = 3,
                             CoPago = "20%",
                             EstadoRegistro = 1,
-                            FechaRegistro = new DateTime(2025, 12, 15, 15, 39, 53, 553, DateTimeKind.Utc).AddTicks(6953),
+                            FechaRegistro = new DateTime(2025, 12, 15, 15, 2, 4, 92, DateTimeKind.Utc).AddTicks(6829),
                             NombreSeguro = "EPS Pacifico",
                             RucEmpresa = "20600000003",
                             TipoCobertura = "Privada",

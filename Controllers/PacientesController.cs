@@ -55,7 +55,6 @@ namespace BackendPTDetecta.Controllers
                 Dni = datos.Dni,
                 Nombres = datos.Nombres,
                 Apellidos = datos.Apellidos,
-                Edad = datos.Edad,
                 Sexo = datos.Sexo,
                 FechaNacimiento = datos.FechaNacimiento,
                 Direccion = datos.Direccion,
@@ -89,8 +88,7 @@ namespace BackendPTDetecta.Controllers
             pacienteExistente.Nombres = datos.Nombres;
             pacienteExistente.Apellidos = datos.Apellidos;
             pacienteExistente.Sexo = datos.Sexo;
-            pacienteExistente.FechaNacimiento = datos.FechaNacimiento;                  
-            pacienteExistente.Edad = datos.Edad;
+            pacienteExistente.FechaNacimiento = datos.FechaNacimiento;
             pacienteExistente.Direccion = datos.Direccion;
             pacienteExistente.Telefono = datos.Telefono;
             pacienteExistente.Email = datos.Email;
@@ -143,7 +141,6 @@ namespace BackendPTDetecta.Controllers
                 Dni = p.Dni,
                 Nombres = p.Nombres,
                 Apellidos = p.Apellidos,
-                Edad = p.Edad,
                 Sexo = p.Sexo,
                 Direccion = p.Direccion,
                 FechaNacimiento = p.FechaNacimiento,

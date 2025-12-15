@@ -11,7 +11,6 @@ namespace BackendPTDetecta.Domain.Entities
         public int IdPaciente { get; set; }
 
         [Column("TX_CODIGO_PACIENTE")]
-        // DatabaseGenerated(DatabaseGeneratedOption.Computed) le dice a EF: "No intentes guardar esto, solo léelo"
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] 
         public string Codigo { get; set; } = string.Empty;
 
@@ -37,10 +36,6 @@ namespace BackendPTDetecta.Domain.Entities
         [Column("TX_FE_NAC_PACIEN", TypeName = "date")]
         public DateTime FechaNacimiento { get; set; }
 
-        // --- ESTOS ERAN LOS QUE FALTABAN ---
-        [Column("NU_EDAD_PACIEN")]
-        public int Edad { get; set; }
-
         [Column("TX_DIR_PACIEN")]
         [MaxLength(200)]
         public string Direccion { get; set; } = string.Empty;
@@ -52,16 +47,9 @@ namespace BackendPTDetecta.Domain.Entities
         [Column("TX_EMAIL_PACIEN")]
         [MaxLength(100)]
         public string Email { get; set; } = string.Empty;
-        // ------------------------------------
-
-        // Relaciones
-        [Column("NU_ID_HIS_CLINICA")]
-        public int? IdHistoriaClinica { get; set; }
         
-        // OJO: Quitamos el [ForeignKey] aquí para evitar ciclos en la BD si usamos la relación 1 a 1
-        // La relación principal la maneja HistorialClinico o ApplicationDbContext
         public virtual HistorialClinico? HistorialClinico { get; set; }
-
+        
         [Column("NU_ID_TIPO_SEGURO")]
         public int? IdTipoSeguro { get; set; }
         

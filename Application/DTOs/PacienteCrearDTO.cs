@@ -14,9 +14,6 @@ namespace BackendPTDetecta.Application.DTOs
         [Required(ErrorMessage = "El apellido es obligatorio")]
         public string Apellidos { get; set; } = string.Empty;
 
-        [Range(0, 120, ErrorMessage = "La edad debe ser válida")]
-        public int Edad { get; set; }
-
         [Required(ErrorMessage = "El sexo es obligatorio")]
         public string Sexo { get; set; } = string.Empty;
 
